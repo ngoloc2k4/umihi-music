@@ -210,4 +210,12 @@
     <string name="in_app_volume">In-App Volume</string>
     <string name="in_app_volume_desc">Independent in-app audio volume control (Supports volume boost up to 125% for Android 7+)</string>
     <string name="volume_boost_badge">Boost</string>
+    
+    <!-- Playlist Recommendations -->
+    <string name="recommended_for_playlist">Recommended for this playlist</string>
+    <string name="recommended_for_playlist_subtitle">Based on songs in this playlist</string>
+    <string name="refresh_recommendations">Refresh Suggestions</string>
+    <string name="add_to_playlist">Add to playlist</string>
+    <string name="added_to_playlist">Added to playlist</string>
+    <string name="empty_playlist_suggestions">This playlist is empty. Explore suggested tracks below:</string>
 </resources>

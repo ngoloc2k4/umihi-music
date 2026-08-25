@@ -4,16 +4,22 @@ import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -168,10 +174,8 @@ fun PlaylistScreen(
                     }
                     val songs = playlistInfo.songs
 
-                    if (uiState.screenState is ScreenState.Loading || songs.isEmpty()) {
-
+                    if (uiState.screenState is ScreenState.Loading) {
                         Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding()))
-
                         PlaylistHeader(
                             onOpenPlayer = onOpenPlayer,
                             isDownloading = uiState.isDownloading,
@@ -184,23 +188,7 @@ fun PlaylistScreen(
                             onCancelDownload = playlistViewModel::cancelDownload,
                             playlist = playlistInfo
                         )
-
-                        if (uiState.screenState is ScreenState.Loading) {
-                            LoadingAnimation()
-                        } else {
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = modifier
-                                    .fillMaxSize()
-                            ) {
-                                Text(
-                                    stringResource(R.string.empty_playlist),
-                                    textAlign = TextAlign.Center,
-                                )
-                            }
-                        }
-
+                        LoadingAnimation()
                     } else {
                         PullToRefreshBox(
                             isRefreshing = uiState.isRefreshing,
@@ -256,6 +244,20 @@ fun PlaylistScreen(
                                     }
                                 }
 
+                                if (songs.isEmpty() && uiState.searchQuery.isBlank()) {
+                                    item {
+                                        Text(
+                                            text = stringResource(R.string.empty_playlist_suggestions),
+                                            textAlign = TextAlign.Center,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 24.dp, vertical = 16.dp)
+                                        )
+                                    }
+                                }
+
                                 items(
                                     items = filteredSongs,
                                     key = { song ->
@@ -275,6 +277,92 @@ fun PlaylistScreen(
                                     }, download = {
                                         playlistViewModel.downloadSong(song)
                                     })
+                                }
+
+                                // Recommended Songs Section (Suggested Tracks)
+                                if (uiState.searchQuery.isBlank() && (uiState.recommendedSongs.isNotEmpty() || uiState.isLoadingRecommendations)) {
+                                    item {
+                                        Spacer(modifier = Modifier.height(24.dp))
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+                                                Column {
+                                                    Text(
+                                                        text = stringResource(R.string.recommended_for_playlist),
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Text(
+                                                        text = stringResource(R.string.recommended_for_playlist_subtitle),
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+
+                                            FilledIconButton(
+                                                onClick = playlistViewModel::refreshRecommendations,
+                                                shapes = IconButtonDefaults.shapes(),
+                                                colors = IconButtonDefaults.filledIconButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                                ),
+                                                modifier = Modifier.size(36.dp)
+                                            ) {
+                                                if (uiState.isLoadingRecommendations) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(18.dp),
+                                                        strokeWidth = 2.dp,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.Refresh,
+                                                        contentDescription = stringResource(R.string.refresh_recommendations),
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    items(
+                                        items = uiState.recommendedSongs,
+                                        key = { song -> "rec_${song.youtubeId}_${song.uid}" }
+                                    ) { song ->
+                                        SongListItem(
+                                            song,
+                                            onPress = {
+                                                onOpenPlayer()
+                                                PlayerManager.playSong(song)
+                                            },
+                                            playNext = {
+                                                PlayerManager.addNext(song, application)
+                                            },
+                                            addToQueue = {
+                                                PlayerManager.addToQueue(song, application)
+                                            },
+                                            download = {
+                                                playlistViewModel.downloadSong(song)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

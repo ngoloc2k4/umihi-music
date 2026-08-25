@@ -45,6 +45,7 @@ graph TD
 ---
 
 ### 💿 2. Smart Personalized Recommendations
+- **Parallel Asynchronous Loading:** Daily Mixes and recommendation shelves load concurrently in parallel via coroutines, cutting load latency by 3x.
 - **Time-Based Context & Greetings:**
   - ☀️ **Morning (05:00 - 11:59):** *"☕ Morning Coffee & Good Vibes"*
   - 🌤️ **Afternoon (12:00 - 17:59):** *"💻 Deep Focus & Study Music"*
@@ -53,6 +54,11 @@ graph TD
 - **Daily Mixes (Mix 1, 2, 3):** Generates 20-track blended playlists combining top artists from SQLite Room playback history with similar tracks via YouTube Radio.
 - **Favorite Artists Shelf:** Circular avatar carousel of most played artists with track counts.
 - **Forgotten Favorites:** Recommends songs you previously loved that haven't been played in a while.
+- **Cold-Start Fallback Discovery:** New users without playback history automatically get rich curated discovery shelves (Top V-Pop & Global Hits, Acoustic Cafe, OSTs).
+- **Playlist Recommendations ("Recommended for this playlist"):**
+  - Displays context-aware suggested tracks at the bottom of any playlist based on its current tracks (or playlist title).
+  - One-tap "Refresh Suggestions" button with smooth loading indicator.
+  - Quick action to play, add to queue, or add to playlist.
 - **Top 100 Charts with Rank Medals:** Songs in the Charts tab display **#1 (Gold 🥇)**, **#2 (Silver 🥈)**, **#3 (Bronze 🥉)**, and **#4+**.
 - **Themed Collections:** Viral TikTok Hits, Movie & Drama OSTs, and Cafe Acoustic Chill.
 

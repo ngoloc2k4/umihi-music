@@ -20,6 +20,7 @@ import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 import ca.ilianokokoro.umihi.music.models.Privacy
 import ca.ilianokokoro.umihi.music.models.UmihiSettings
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -248,33 +249,35 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                         }
                     }
 
-                    // 3. Daily Mix 1, 2, 3
+                    // 3. Daily Mix 1, 2, 3 (Fetched concurrently in parallel)
                     val top3Artists = artistCounts.take(3).map { it.first }
-                    for ((index, artist) in top3Artists.withIndex()) {
-                        val artistSong = recentSongs.firstOrNull { it.artist.contains(artist, ignoreCase = true) }
-                        if (artistSong != null && artistSong.youtubeId.isNotBlank()) {
-                            try {
-                                val related = songDataSource.getRelatedSongs(artistSong.youtubeId, settings)
-                                if (related.isNotEmpty()) {
-                                    val mixTitle = String.format(application.getString(R.string.daily_mix_title), index + 1) + " • $artist"
-                                    val artistOwnSongs = recentSongs.filter { it.artist.contains(artist, ignoreCase = true) }.take(5)
-                                    val blended = (artistOwnSongs + related.filter { rel -> artistOwnSongs.none { it.youtubeId == rel.youtubeId } }).distinctBy { it.youtubeId }.take(20)
-                                    dynamicSections.add(
+                    val dailyMixDeferreds = top3Artists.mapIndexed { index, artist ->
+                        async {
+                            val artistSong = recentSongs.firstOrNull { it.artist.contains(artist, ignoreCase = true) }
+                            if (artistSong != null && artistSong.youtubeId.isNotBlank()) {
+                                try {
+                                    val related = songDataSource.getRelatedSongs(artistSong.youtubeId, settings)
+                                    if (related.isNotEmpty()) {
+                                        val mixTitle = String.format(application.getString(R.string.daily_mix_title), index + 1) + " • $artist"
+                                        val artistOwnSongs = recentSongs.filter { it.artist.contains(artist, ignoreCase = true) }.take(5)
+                                        val blended = (artistOwnSongs + related.filter { rel -> artistOwnSongs.none { it.youtubeId == rel.youtubeId } }).distinctBy { it.youtubeId }.take(20)
                                         HomeSection(
                                             id = "daily_mix_${index + 1}",
                                             title = mixTitle,
                                             subtitle = application.getString(R.string.supermix_subtitle),
                                             items = blended.map { HomeSectionItem.SongItem(it) }
                                         )
-                                    )
-                                }
-                            } catch (_: Exception) {}
+                                    } else null
+                                } catch (_: Exception) { null }
+                            } else null
                         }
                     }
+                    val dailyMixSections = dailyMixDeferreds.awaitAll().filterNotNull()
+                    dynamicSections.addAll(dailyMixSections)
 
                     // 4. Forgotten Favorites (older songs from history)
                     if (recentSongs.size > 15) {
-                        val olderSongs = recentSongs.drop(12).take(15)
+                        val olderSongs = recentSongs.drop(12).take(15).distinctBy { it.youtubeId }
                         if (olderSongs.isNotEmpty()) {
                             dynamicSections.add(
                                 HomeSection(
@@ -286,6 +289,30 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                             )
                         }
                     }
+                } else {
+                    // Fallback discovery shelves for new users or when history is empty
+                    val discoveryDeferred = async {
+                        try {
+                            val res = playlistRepository.retrieveMoodSections(
+                                "Top Hits Vietnam Pop Billboard Hot",
+                                application.getString(R.string.discover_weekly_title),
+                                settings
+                            ).first { it is ApiResult.Success || it is ApiResult.Error }
+                            if (res is ApiResult.Success) res.data else emptyList()
+                        } catch (_: Exception) { emptyList() }
+                    }
+                    val cafeAcousticDeferred = async {
+                        try {
+                            val res = playlistRepository.retrieveMoodSections(
+                                "Acoustic Pop Guitar Chill Cafe Songs",
+                                application.getString(R.string.cafe_acoustic_title),
+                                settings
+                            ).first { it is ApiResult.Success || it is ApiResult.Error }
+                            if (res is ApiResult.Success) res.data else emptyList()
+                        } catch (_: Exception) { emptyList() }
+                    }
+                    dynamicSections.addAll(discoveryDeferred.await())
+                    dynamicSections.addAll(cafeAcousticDeferred.await())
                 }
 
                 // 5. Add Contextual Time Shelf (Coffee morning / Deep focus / Night chill)
@@ -294,8 +321,8 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                 // 6. Add Trending / Themed Shelf
                 dynamicSections.addAll(trendingSections)
 
-                // 7. Add YouTube Music official recommendation sections
-                dynamicSections + homeSections
+                // 7. Add YouTube Music official recommendation sections (deduplicated)
+                (dynamicSections + homeSections).distinctBy { it.id.ifBlank { it.title } }
             }
 
             HomeCategory.CHARTS -> {

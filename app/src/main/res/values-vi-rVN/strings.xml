@@ -204,4 +204,12 @@
     <string name="in_app_volume">Âm lượng ứng dụng</string>
     <string name="in_app_volume_desc">Tùy chỉnh âm lượng âm thanh độc lập cho ứng dụng (Hỗ trợ tăng âm lượng lên tới 125% cho Android 7+)</string>
     <string name="volume_boost_badge">Tăng cường</string>
+
+    <!-- Playlist Recommendations -->
+    <string name="recommended_for_playlist">Gợi ý cho danh sách này</string>
+    <string name="recommended_for_playlist_subtitle">Dựa trên các bài hát trong danh sách phát</string>
+    <string name="refresh_recommendations">Làm mới gợi ý</string>
+    <string name="add_to_playlist">Thêm vào danh sách</string>
+    <string name="added_to_playlist">Đã thêm vào danh sách phát</string>
+    <string name="empty_playlist_suggestions">Danh sách này đang trống. Hãy nghe thử các bài hát gợi ý dưới đây:</string>
 </resources>

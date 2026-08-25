@@ -13,6 +13,7 @@ import ca.ilianokokoro.umihi.music.core.ApiResult
 import ca.ilianokokoro.umihi.music.core.helpers.LogHelper.printd
 import ca.ilianokokoro.umihi.music.core.helpers.LogHelper.printe
 import ca.ilianokokoro.umihi.music.core.managers.PlayerManager
+import ca.ilianokokoro.umihi.music.data.datasources.SongDataSource
 import ca.ilianokokoro.umihi.music.data.database.AppDatabase
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository
 import ca.ilianokokoro.umihi.music.data.repositories.DownloadRepository
@@ -21,6 +22,9 @@ import ca.ilianokokoro.umihi.music.models.Playlist
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 import ca.ilianokokoro.umihi.music.models.Song
 import ca.ilianokokoro.umihi.music.ui.navigation.viewmodels.SharedViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -57,6 +61,7 @@ class PlaylistViewModel(
     private val localPlaylistRepository = AppDatabase.getInstance(application).playlistRepository()
     private val datastoreRepository = DatastoreRepository(application)
     private val downloadRepository = DownloadRepository(application)
+    private val songDataSource = SongDataSource()
 
     init {
         observeSongDownloads()
@@ -306,6 +311,10 @@ class PlaylistViewModel(
                             }
                         )
                     }
+
+                    if (apiResult is ApiResult.Success) {
+                        fetchRecommendations(apiResult.data)
+                    }
                 }
 
         } catch (ex: Exception) {
@@ -317,6 +326,86 @@ class PlaylistViewModel(
             }
         }
 
+    }
+
+    fun refreshRecommendations() {
+        val playlist = getPlaylist() ?: return
+        fetchRecommendations(playlist, forceRefresh = true)
+    }
+
+    fun fetchRecommendations(playlist: Playlist, forceRefresh: Boolean = false) {
+        if (!forceRefresh && _uiState.value.recommendedSongs.isNotEmpty()) {
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingRecommendations = true) }
+            try {
+                val settings = datastoreRepository.getSettings()
+                val existingIds = playlist.songs.map { it.youtubeId }.toSet()
+                val sampleSongs = playlist.songs.take(3)
+
+                val suggestedSongs = if (sampleSongs.isNotEmpty()) {
+                    coroutineScope {
+                        sampleSongs.map { song ->
+                            async {
+                                try {
+                                    songDataSource.getRelatedSongs(song.youtubeId, settings)
+                                } catch (_: Exception) {
+                                    emptyList()
+                                }
+                            }
+                        }.awaitAll().flatten()
+                    }
+                } else {
+                    try {
+                        val query = playlist.info.title.ifBlank { "Vietnam Pop Hits Music" }
+                        songDataSource.search(query, settings = settings)
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+
+                val filtered = suggestedSongs
+                    .filterNot { it.youtubeId in existingIds }
+                    .distinctBy { it.youtubeId }
+                    .take(15)
+
+                _uiState.update {
+                    it.copy(
+                        recommendedSongs = filtered,
+                        isLoadingRecommendations = false
+                    )
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to load playlist recommendations: ${e.message}", exception = e)
+                _uiState.update { it.copy(isLoadingRecommendations = false) }
+            }
+        }
+    }
+
+    fun addSongToPlaylist(song: Song) {
+        val playlist = getPlaylist() ?: return
+        viewModelScope.launch {
+            try {
+                val settings = datastoreRepository.getSettings()
+                if (settings.cookies.isEmpty()) {
+                    return@launch
+                }
+                playlistRepository.edit(
+                    playlistId = playlist.info.id,
+                    settings = settings,
+                    videoIdsToAdd = listOf(song.youtubeId)
+                )
+                android.widget.Toast.makeText(
+                    application,
+                    application.getString(R.string.added_to_playlist),
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                getPlaylistInfoAsync()
+            } catch (e: Exception) {
+                printe(message = "Failed to add song to playlist: ${e.message}", exception = e)
+            }
+        }
     }
 
     private fun updatePlaylistFrom(oldPlaylist: Playlist, updatedPlaylist: Playlist?): Playlist {

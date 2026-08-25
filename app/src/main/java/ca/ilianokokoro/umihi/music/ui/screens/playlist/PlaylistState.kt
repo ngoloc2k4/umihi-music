@@ -4,12 +4,16 @@ import ca.ilianokokoro.umihi.music.models.Playlist
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 
 
+import ca.ilianokokoro.umihi.music.models.Song
+
 data class PlaylistState(
     val screenState: ScreenState,
     val isRefreshing: Boolean = false,
     val isDownloading: Boolean = false,
     val searchQuery: String = "",
-    val showingSearch: Boolean = false
+    val showingSearch: Boolean = false,
+    val recommendedSongs: List<Song> = emptyList(),
+    val isLoadingRecommendations: Boolean = false
 )
 
 sealed class ScreenState {
