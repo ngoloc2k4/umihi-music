@@ -212,4 +212,8 @@
     <string name="add_to_playlist">Thêm vào danh sách</string>
     <string name="added_to_playlist">Đã thêm vào danh sách phát</string>
     <string name="empty_playlist_suggestions">Danh sách này đang trống. Hãy nghe thử các bài hát gợi ý dưới đây:</string>
+    <string name="infinite_playlist_suggestions_title">Gợi ý bài hát vô tận</string>
+    <string name="infinite_playlist_suggestions_desc">Tự động tải thêm các bài hát tương tự khi cuộn xuống cuối danh sách phát</string>
+    <string name="load_more_suggestions">Tải thêm gợi ý</string>
+    <string name="loading_more_suggestions">Đang tìm thêm bài hát phù hợp…</string>
 </resources>

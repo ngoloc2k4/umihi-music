@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.outlined.FeaturedPlayList
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.CloudDownload
@@ -229,6 +230,19 @@ fun SettingsScreen(
                                 leadingIcon = Icons.Outlined.Memory,
                                 value = screenState.settings.useAudioOffload,
                                 onToggle = settingsViewModel::updateAudioOffloadSetting
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            BooleanSettingItem(
+                                title = stringResource(R.string.infinite_playlist_suggestions_title),
+                                subtitle = stringResource(R.string.infinite_playlist_suggestions_desc),
+                                leadingIcon = Icons.Outlined.AutoAwesome,
+                                value = screenState.settings.infinitePlaylistSuggestions,
+                                onToggle = {
+                                    settingsViewModel.updateSetting(
+                                        PreferenceKeys.INFINITE_PLAYLIST_SUGGESTIONS,
+                                        it
+                                    )
+                                }
                             )
                         }
 

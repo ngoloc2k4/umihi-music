@@ -328,8 +328,11 @@ class PlaylistViewModel(
 
     }
 
+    private val usedSeedIds = mutableSetOf<String>()
+
     fun refreshRecommendations() {
         val playlist = getPlaylist() ?: return
+        usedSeedIds.clear()
         fetchRecommendations(playlist, forceRefresh = true)
     }
 
@@ -342,7 +345,12 @@ class PlaylistViewModel(
             try {
                 val settings = datastoreRepository.getSettings()
                 val existingIds = playlist.songs.map { it.youtubeId }.toSet()
-                val sampleSongs = playlist.songs.take(3)
+                if (forceRefresh) {
+                    usedSeedIds.clear()
+                }
+
+                val sampleSongs = playlist.songs.filterNot { it.youtubeId in usedSeedIds }.take(3)
+                sampleSongs.forEach { usedSeedIds.add(it.youtubeId) }
 
                 val suggestedSongs = if (sampleSongs.isNotEmpty()) {
                     coroutineScope {
@@ -368,17 +376,89 @@ class PlaylistViewModel(
                 val filtered = suggestedSongs
                     .filterNot { it.youtubeId in existingIds }
                     .distinctBy { it.youtubeId }
-                    .take(15)
+                    .take(20)
 
                 _uiState.update {
                     it.copy(
                         recommendedSongs = filtered,
-                        isLoadingRecommendations = false
+                        isLoadingRecommendations = false,
+                        hasMoreRecommendations = filtered.isNotEmpty(),
+                        showInfiniteSuggestions = settings.infinitePlaylistSuggestions
                     )
                 }
             } catch (e: Exception) {
                 printe(message = "Failed to load playlist recommendations: ${e.message}", exception = e)
                 _uiState.update { it.copy(isLoadingRecommendations = false) }
+            }
+        }
+    }
+
+    fun loadMoreRecommendations() {
+        val playlist = getPlaylist() ?: return
+        val state = _uiState.value
+        if (!state.showInfiniteSuggestions || state.isLoadingMoreRecommendations || state.isLoadingRecommendations || !state.hasMoreRecommendations) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreRecommendations = true) }
+            try {
+                val settings = datastoreRepository.getSettings()
+                val playlistIds = playlist.songs.map { it.youtubeId }.toSet()
+                val currentRecIds = state.recommendedSongs.map { it.youtubeId }.toSet()
+
+                // Pick next seeds: first from unused playlist songs, then from unused recommended songs
+                val nextSeeds = playlist.songs.filterNot { it.youtubeId in usedSeedIds }.take(2).ifEmpty {
+                    state.recommendedSongs.filterNot { it.youtubeId in usedSeedIds }.take(2)
+                }.ifEmpty {
+                    // If all were used, pick 2 random from recommended songs to branch out
+                    state.recommendedSongs.shuffled().take(2)
+                }
+
+                if (nextSeeds.isEmpty()) {
+                    _uiState.update { it.copy(isLoadingMoreRecommendations = false, hasMoreRecommendations = false) }
+                    return@launch
+                }
+
+                nextSeeds.forEach { usedSeedIds.add(it.youtubeId) }
+
+                val newRawSongs = coroutineScope {
+                    nextSeeds.map { song ->
+                        async {
+                            try {
+                                songDataSource.getRelatedSongs(song.youtubeId, settings)
+                            } catch (_: Exception) {
+                                emptyList()
+                            }
+                        }
+                    }.awaitAll().flatten()
+                }
+
+                val newUniqueSongs = newRawSongs
+                    .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
+                    .distinctBy { it.youtubeId }
+                    .take(15)
+
+                if (newUniqueSongs.isNotEmpty()) {
+                    val updatedList = state.recommendedSongs + newUniqueSongs
+                    _uiState.update {
+                        it.copy(
+                            recommendedSongs = updatedList,
+                            isLoadingMoreRecommendations = false,
+                            hasMoreRecommendations = true
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMoreRecommendations = false,
+                            hasMoreRecommendations = false
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to load more recommendations: ${e.message}", exception = e)
+                _uiState.update { it.copy(isLoadingMoreRecommendations = false) }
             }
         }
     }

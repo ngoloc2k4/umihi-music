@@ -218,4 +218,8 @@
     <string name="add_to_playlist">Add to playlist</string>
     <string name="added_to_playlist">Added to playlist</string>
     <string name="empty_playlist_suggestions">This playlist is empty. Explore suggested tracks below:</string>
+    <string name="infinite_playlist_suggestions_title">Infinite Playlist Suggestions</string>
+    <string name="infinite_playlist_suggestions_desc">Continuously load similar song suggestions as you scroll down a playlist</string>
+    <string name="load_more_suggestions">Load more suggestions</string>
+    <string name="loading_more_suggestions">Finding more songs for you…</string>
 </resources>

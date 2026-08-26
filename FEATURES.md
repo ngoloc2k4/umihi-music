@@ -55,8 +55,10 @@ graph TD
 - **Favorite Artists Shelf:** Circular avatar carousel of most played artists with track counts.
 - **Forgotten Favorites:** Recommends songs you previously loved that haven't been played in a while.
 - **Cold-Start Fallback Discovery:** New users without playback history automatically get rich curated discovery shelves (Top V-Pop & Global Hits, Acoustic Cafe, OSTs).
-- **Playlist Recommendations ("Recommended for this playlist"):**
+- **Infinite Playlist Recommendations ("Recommended for this playlist"):**
   - Displays context-aware suggested tracks at the bottom of any playlist based on its current tracks (or playlist title).
+  - **Endless / Infinite Scrolling:** Continuously fetches more fresh related songs as the user scrolls down, rotating seed songs to discover new tracks indefinitely.
+  - **Playback Settings Toggle:** Configurable in **Settings -> Playback -> Infinite Playlist Suggestions**.
   - One-tap "Refresh Suggestions" button with smooth loading indicator.
   - Quick action to play, add to queue, or add to playlist.
 - **Top 100 Charts with Rank Medals:** Songs in the Charts tab display **#1 (Gold 🥇)**, **#2 (Silver 🥈)**, **#3 (Bronze 🥉)**, and **#4+**.

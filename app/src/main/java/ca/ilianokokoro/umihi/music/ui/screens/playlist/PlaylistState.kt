@@ -13,7 +13,10 @@ data class PlaylistState(
     val searchQuery: String = "",
     val showingSearch: Boolean = false,
     val recommendedSongs: List<Song> = emptyList(),
-    val isLoadingRecommendations: Boolean = false
+    val isLoadingRecommendations: Boolean = false,
+    val isLoadingMoreRecommendations: Boolean = false,
+    val hasMoreRecommendations: Boolean = true,
+    val showInfiniteSuggestions: Boolean = true
 )
 
 sealed class ScreenState {

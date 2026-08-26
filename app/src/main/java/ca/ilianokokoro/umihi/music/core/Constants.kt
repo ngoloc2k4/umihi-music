@@ -93,6 +93,7 @@ object Constants {
         const val EXOPLAYER_CACHE_SIZE_KEY = "exoplayer-cache-size"
         const val THUMBNAIL_CACHE_SIZE_KEY = "thumbnail-cache-size"
         const val APP_VOLUME_KEY = "app-volume"
+        const val INFINITE_PLAYLIST_SUGGESTIONS_KEY = "infinite-playlist-suggestions"
     }
 
     object Database {
