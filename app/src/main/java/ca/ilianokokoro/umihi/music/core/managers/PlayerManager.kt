@@ -148,6 +148,7 @@ object PlayerManager {
                     synchronized(this@PlayerManager) {
                         controller = built
                         _controllerState.value = built
+                        setupAutoplayListener(built, appContext)
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -161,6 +162,72 @@ object PlayerManager {
             },
             MoreExecutors.directExecutor()
         )
+    }
+
+    private var autoplayListener: Player.Listener? = null
+    private var isFetchingAutoplay = false
+
+    private fun setupAutoplayListener(built: MediaController, context: Context) {
+        autoplayListener?.let { built.removeListener(it) }
+        val listener = object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                checkAndTriggerAutoplay(built, context)
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    checkAndTriggerAutoplay(built, context)
+                }
+            }
+        }
+        built.addListener(listener)
+        autoplayListener = listener
+    }
+
+    private fun checkAndTriggerAutoplay(controller: MediaController, context: Context) {
+        val currentIndex = controller.currentMediaItemIndex
+        val totalCount = controller.mediaItemCount
+        // When nearing the end of queue (last 2 songs)
+        if (totalCount == 0 || currentIndex < totalCount - 2 || isFetchingAutoplay) {
+            return
+        }
+
+        scope.launch {
+            try {
+                val settings = DatastoreRepository(context.applicationContext).getSettings()
+                if (!settings.infinitePlaylistSuggestions) {
+                    return@launch
+                }
+
+                isFetchingAutoplay = true
+                val lastItem = withContext(Dispatchers.Main.immediate) {
+                    if (controller.mediaItemCount > 0) {
+                        controller.getMediaItemAt(controller.mediaItemCount - 1)
+                    } else null
+                }
+                val lastId = lastItem?.mediaId ?: return@launch
+                if (lastId.isBlank()) return@launch
+
+                songRepository.getRelatedSongs(lastId).collect { result ->
+                    if (result is ApiResult.Success) {
+                        withContext(Dispatchers.Main.immediate) {
+                            val activeController = currentController ?: return@withContext
+                            val existingIds = (0 until activeController.mediaItemCount).map {
+                                activeController.getMediaItemAt(it).mediaId
+                            }.toSet()
+                            val newSongs = result.data.filterNot { it.youtubeId in existingIds }.take(10)
+                            if (newSongs.isNotEmpty()) {
+                                activeController.addMediaItems(newSongs.map { it.mediaItem })
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore autoplay fetch errors
+            } finally {
+                isFetchingAutoplay = false
+            }
+        }
     }
 
     @Synchronized

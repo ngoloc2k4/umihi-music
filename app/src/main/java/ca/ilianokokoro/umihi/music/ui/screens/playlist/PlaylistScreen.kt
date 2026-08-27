@@ -301,7 +301,7 @@ fun PlaylistScreen(
                                 }
 
                                 // Recommended Songs Section (Suggested Tracks)
-                                if (uiState.searchQuery.isBlank() && (uiState.recommendedSongs.isNotEmpty() || uiState.isLoadingRecommendations)) {
+                                if (uiState.searchQuery.isBlank()) {
                                     item {
                                         Spacer(modifier = Modifier.height(24.dp))
                                         Row(
@@ -359,6 +359,30 @@ fun PlaylistScreen(
                                                         modifier = Modifier.size(18.dp)
                                                     )
                                                 }
+                                            }
+                                        }
+                                    }
+
+                                    if (uiState.isLoadingRecommendations && uiState.recommendedSongs.isEmpty()) {
+                                        item {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 24.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(22.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.size(12.dp))
+                                                Text(
+                                                    text = stringResource(R.string.loading_more_suggestions),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
                                         }
                                     }
