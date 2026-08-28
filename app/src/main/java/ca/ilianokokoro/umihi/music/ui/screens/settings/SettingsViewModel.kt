@@ -138,10 +138,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun forceStopPlayback() {
-        PlayerManager.forceStopPlayback(_application)
+        val app = getApplication<Application>()
+        PlayerManager.forceStopPlayback(app)
         Toast.makeText(
-            _application,
-            _application.getString(R.string.force_stop_toast),
+            app,
+            app.getString(R.string.force_stop_toast),
             Toast.LENGTH_SHORT
         ).show()
     }
