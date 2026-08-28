@@ -364,7 +364,7 @@ class PlaylistViewModel(
                                 try {
                                     songDataSource.getRelatedSongs(song.youtubeId, settings)
                                 } catch (_: Exception) {
-                                    emptyList()
+                                    emptyList<Song>()
                                 }
                             }
                         }.awaitAll().flatten()
@@ -377,10 +377,10 @@ class PlaylistViewModel(
                 if (suggestedSongs.isEmpty()) {
                     val fallbackQuery = playlist.songs.firstOrNull()?.artist?.ifBlank { null }
                         ?: playlist.info.title.ifBlank { "Top Vietnam Hits Music" }
-                    try {
-                        suggestedSongs = songDataSource.search(fallbackQuery, settings = settings)
+                    suggestedSongs = try {
+                        songDataSource.search(fallbackQuery, settings = settings)
                     } catch (_: Exception) {
-                        emptyList()
+                        emptyList<Song>()
                     }
                 }
 
@@ -427,9 +427,9 @@ class PlaylistViewModel(
 
                 if (nextSeeds.isEmpty()) {
                     val query = state.recommendedSongs.lastOrNull()?.artist?.ifBlank { "Vietnam Pop Hits" } ?: "Vietnam Pop Hits"
-                    val searchResults = try {
+                    val searchResults: List<Song> = try {
                         songDataSource.search(query, settings = settings)
-                    } catch (_: Exception) { emptyList() }
+                    } catch (_: Exception) { emptyList<Song>() }
 
                     val newUniqueSongs = searchResults
                         .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
@@ -458,7 +458,7 @@ class PlaylistViewModel(
                             try {
                                 songDataSource.getRelatedSongs(song.youtubeId, settings)
                             } catch (_: Exception) {
-                                emptyList()
+                                emptyList<Song>()
                             }
                         }
                     }.awaitAll().flatten()
@@ -471,9 +471,9 @@ class PlaylistViewModel(
 
                 if (newUniqueSongs.isEmpty()) {
                     val query = nextSeeds.firstOrNull()?.artist?.ifBlank { "Vietnam Music Hits" } ?: "Vietnam Music Hits"
-                    val fallbackResults = try {
+                    val fallbackResults: List<Song> = try {
                         songDataSource.search(query, settings = settings)
-                    } catch (_: Exception) { emptyList() }
+                    } catch (_: Exception) { emptyList<Song>() }
 
                     newUniqueSongs = fallbackResults
                         .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
