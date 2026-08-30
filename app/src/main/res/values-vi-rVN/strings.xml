@@ -216,4 +216,12 @@
     <string name="infinite_playlist_suggestions_desc">Tự động tải thêm các bài hát tương tự khi cuộn xuống cuối danh sách phát</string>
     <string name="load_more_suggestions">Tải thêm gợi ý</string>
     <string name="loading_more_suggestions">Đang tìm thêm bài hát phù hợp…</string>
+
+    <!-- Theme Settings -->
+    <string name="theme_setting_title">Giao diện</string>
+    <string name="theme_setting_desc">Tùy chọn chủ đề giao diện ứng dụng</string>
+    <string name="theme_select_dialog_title">Chọn giao diện</string>
+    <string name="theme_dark">Tối (Mặc định)</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_system">Theo hệ thống</string>
 </resources>

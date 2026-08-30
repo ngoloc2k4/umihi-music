@@ -94,6 +94,7 @@ object Constants {
         const val THUMBNAIL_CACHE_SIZE_KEY = "thumbnail-cache-size"
         const val APP_VOLUME_KEY = "app-volume"
         const val INFINITE_PLAYLIST_SUGGESTIONS_KEY = "infinite-playlist-suggestions"
+        const val THEME_MODE_KEY = "theme-mode"
     }
 
     object Database {

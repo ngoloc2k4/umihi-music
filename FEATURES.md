@@ -83,6 +83,13 @@ graph TD
 
 ---
 
+### 🌙 6. Dark Mode by Default & Custom Theme Selection
+- **Default Dark Mode:** Sleek dark interface enabled out-of-the-box for better battery saving on OLED screens and comfortable nighttime listening.
+- **Theme Selection in Settings:** Switch between **Dark (Default)**, **Light**, and **Follow System** under **Settings -> General -> Theme**.
+- **Real-Time Dynamic Theming:** Theme updates instantly across all screens and bottom sheets without requiring app restarts.
+
+---
+
 ## 📋 Feature Test Checklist
 
 | # | Feature | How to Test | Expected Result |
@@ -94,6 +101,7 @@ graph TD
 | 5 | **Daily Mixes (Mix 1, 2, 3)** | Home screen | Generates blended playlists combining top artists with fresh suggestions. |
 | 6 | **Chart Rank Badges (#1, #2, #3)** | `🔥 Charts & Trending` tab | Shows rank medals `#1 (Gold)`, `#2 (Silver)`, `#3 (Bronze)`. |
 | 7 | **Country / Region Selector** | Settings -> Recommendation Region | Switch between VN/US/JP/KR -> Regional charts adapt accordingly. |
-| 8 | **Cache Management** | Settings -> Cache Management | Custom MB size saves; clearing audio/thumbnail cache works. |
-| 9 | **Force Stop Playback** | Settings -> Actions | Playback stops, audio focus is released, Media Notification disappears. |
-| 10 | **Full Localization** | Entire App | Full Vietnamese / English coverage with no missing strings. |
+| 8 | **Dark Mode & Theme Switching** | Settings -> General -> Theme | App defaults to Dark Mode; selecting Light Mode or Follow System immediately applies theme without restart. |
+| 9 | **Cache Management** | Settings -> Cache Management | Custom MB size saves; clearing audio/thumbnail cache works. |
+| 10 | **Force Stop Playback** | Settings -> Actions | Playback stops, audio focus is released, Media Notification disappears. |
+| 11 | **Full Localization** | Entire App | Full Vietnamese / English coverage with no missing strings. |

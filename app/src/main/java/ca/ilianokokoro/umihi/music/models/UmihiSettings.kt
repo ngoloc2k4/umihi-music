@@ -19,7 +19,8 @@ data class UmihiSettings(
     val exoPlayerCacheSizeMB: Int = 350,
     val thumbnailCacheSizeMB: Int = 100,
     val appVolume: Int = 100,
-    val infinitePlaylistSuggestions: Boolean = true
+    val infinitePlaylistSuggestions: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.DARK
 ) {
     val canTrack: Boolean get() = sendPlaybackData && !cookies.isEmpty()
 }

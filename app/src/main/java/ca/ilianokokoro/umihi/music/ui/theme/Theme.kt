@@ -101,7 +101,7 @@ data class ColorFamily(
 
 @Composable
 fun UmihiMusicTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {

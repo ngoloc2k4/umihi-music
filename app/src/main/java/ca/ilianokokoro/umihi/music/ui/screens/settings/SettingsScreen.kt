@@ -19,12 +19,15 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.StayCurrentPortrait
 import androidx.compose.material.icons.outlined.SystemUpdate
@@ -48,12 +51,14 @@ import ca.ilianokokoro.umihi.music.R
 import ca.ilianokokoro.umihi.music.core.Constants
 import ca.ilianokokoro.umihi.music.core.managers.VersionManager
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys
+import ca.ilianokokoro.umihi.music.models.ThemeMode
 import ca.ilianokokoro.umihi.music.ui.components.ErrorMessage
 import ca.ilianokokoro.umihi.music.ui.components.FadingStatusBarWrapper
 import ca.ilianokokoro.umihi.music.ui.components.LoadingAnimation
 import ca.ilianokokoro.umihi.music.ui.components.dialog.AVAILABLE_COUNTRIES
 import ca.ilianokokoro.umihi.music.ui.components.dialog.ConfirmDialog
 import ca.ilianokokoro.umihi.music.ui.components.dialog.CountrySelectDialog
+import ca.ilianokokoro.umihi.music.ui.components.dialog.ThemeSelectDialog
 import ca.ilianokokoro.umihi.music.ui.components.dialog.UpdateChannelDialog
 import ca.ilianokokoro.umihi.music.ui.components.dialog.CacheSizeInputDialog
 import ca.ilianokokoro.umihi.music.ui.screens.player.components.VolumeBottomSheet
@@ -165,6 +170,25 @@ fun SettingsScreen(
                         SettingsSection(
                             title = stringResource(R.string.general)
                         ) {
+                            val themeSubtitle = when (screenState.settings.themeMode) {
+                                ThemeMode.DARK -> stringResource(R.string.theme_dark)
+                                ThemeMode.LIGHT -> stringResource(R.string.theme_light)
+                                ThemeMode.SYSTEM -> stringResource(R.string.theme_system)
+                            }
+                            val themeIcon = when (screenState.settings.themeMode) {
+                                ThemeMode.DARK -> Icons.Outlined.DarkMode
+                                ThemeMode.LIGHT -> Icons.Outlined.LightMode
+                                ThemeMode.SYSTEM -> Icons.Outlined.BrightnessAuto
+                            }
+                            SettingsItem(
+                                title = stringResource(R.string.theme_setting_title),
+                                subtitle = themeSubtitle,
+                                leadingIcon = themeIcon,
+                                onClick = {
+                                    settingsViewModel.updateShowThemeSelectDialog(true)
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             BooleanSettingItem(
                                 title = stringResource(R.string.show_podcast_playlist_title),
                                 subtitle = stringResource(R.string.show_podcast_playlist_description),
@@ -444,6 +468,14 @@ fun SettingsScreen(
                                 changeVisibility = settingsViewModel::updateShowVolumeDialog,
                                 currentVolume = screenState.settings.appVolume,
                                 onVolumeChange = settingsViewModel::setAppVolume
+                            )
+                        } else if (uiState.showThemeSelectDialog) {
+                            ThemeSelectDialog(
+                                selectedOption = screenState.settings.themeMode,
+                                onChange = settingsViewModel::updateThemeMode,
+                                onClose = {
+                                    settingsViewModel.updateShowThemeSelectDialog(false)
+                                }
                             )
                         }
                     }

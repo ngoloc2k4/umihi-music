@@ -28,6 +28,7 @@ import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.Prefere
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.APP_VOLUME
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.INFINITE_PLAYLIST_SUGGESTIONS
 import ca.ilianokokoro.umihi.music.models.Cookies
+import ca.ilianokokoro.umihi.music.models.ThemeMode
 import ca.ilianokokoro.umihi.music.models.UmihiSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -54,6 +55,7 @@ class DatastoreRepository(private val context: Context) {
         val THUMBNAIL_CACHE_SIZE = intPreferencesKey(Constants.Datastore.THUMBNAIL_CACHE_SIZE_KEY)
         val APP_VOLUME = intPreferencesKey(Constants.Datastore.APP_VOLUME_KEY)
         val INFINITE_PLAYLIST_SUGGESTIONS = booleanPreferencesKey(Constants.Datastore.INFINITE_PLAYLIST_SUGGESTIONS_KEY)
+        val THEME_MODE = stringPreferencesKey(Constants.Datastore.THEME_MODE_KEY)
     }
 
     suspend fun <T> save(key: Preferences.Key<T>, value: T) {
@@ -81,6 +83,7 @@ class DatastoreRepository(private val context: Context) {
         val thumbnailCacheSize = it[THUMBNAIL_CACHE_SIZE] ?: Constants.ExoPlayer.ThumbnailCache.DEFAULT_SIZE_MB.toInt()
         val appVolume = it[APP_VOLUME] ?: Constants.Player.Volume.DEFAULT_PERCENT
         val infinitePlaylistSuggestions = it[INFINITE_PLAYLIST_SUGGESTIONS] ?: true
+        val themeMode = it[THEME_MODE]?.let { modeStr -> ThemeMode.fromString(modeStr) } ?: ThemeMode.DARK
         val cookies = cookies.first()
         val dataSyncId = dataSyncId.first()
 
@@ -100,7 +103,8 @@ class DatastoreRepository(private val context: Context) {
             exoPlayerCacheSizeMB = exoPlayerCacheSize,
             thumbnailCacheSizeMB = thumbnailCacheSize,
             appVolume = appVolume,
-            infinitePlaylistSuggestions = infinitePlaylistSuggestions
+            infinitePlaylistSuggestions = infinitePlaylistSuggestions,
+            themeMode = themeMode
         )
     }
 

@@ -95,6 +95,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         updateSetting(DatastoreRepository.PreferenceKeys.COUNTRY_CODE, countryCode)
     }
 
+    fun updateShowThemeSelectDialog(value: Boolean) {
+        viewModelScope.launch {
+            _uiState.update {
+                _uiState.value.copy(
+                    showThemeSelectDialog = value
+                )
+            }
+        }
+    }
+
+    fun updateThemeMode(themeMode: ca.ilianokokoro.umihi.music.models.ThemeMode) {
+        updateSetting(DatastoreRepository.PreferenceKeys.THEME_MODE, themeMode.name)
+    }
+
     fun updateShowDownloadDeleteConfirm(value: Boolean) {
         viewModelScope.launch {
             _uiState.update {
