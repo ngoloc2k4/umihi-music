@@ -13,7 +13,7 @@ This fork of **Umihi Music** includes powerful new personalization features, aud
 ```mermaid
 graph TD
     A[Umihi Music Fork] --> B[1. Smart Recommendations & Personalization]
-    A --> C[2. Independent In-App Volume 0 - 125%]
+    A --> C[2. Independent In-App Volume 0 - 200%]
     A --> D[3. Cache Management & Force Stop]
     A --> E[4. Full Localization & Region Selection]
     
@@ -23,7 +23,7 @@ graph TD
     B --> B4[Circular Favorite Artists Carousel]
     
     C --> C1[ExoPlayer Software Volume 0-100%]
-    C --> C2[LoudnessEnhancer DSP Boost 101-125%]
+    C --> C2[LoudnessEnhancer DSP Boost 101-200%]
     
     D --> D1[Customizable MB Audio & Thumbnail Cache]
     D --> D2[In-App Force Stop to Kill Playback Service]
@@ -36,10 +36,10 @@ graph TD
 
 ## 🚀 Detailed Features
 
-### 🔊 1. Independent In-App Volume Control (0% – 125%)
+### 🔊 1. Independent In-App Volume Control (0% – 200%)
 - **Custom App Volume Mixer:** Adjust in-app volume without modifying master Android system or ringtone volume (especially useful on Android 7 - 9).
-- **DSP Pre-Amp Gain Boost (101% – 125%):** Hardware-accelerated DSP **`android.media.audiofx.LoudnessEnhancer`** integration provides up to **+400 mB (~4dB)** boost with automatic limiting against audio distortion.
-- **`VolumeBottomSheet`:** Fluid slider with haptic feedback, adaptive volume level icons, `⚡ Boost` badge, and quick preset buttons: `[0%]`, `[50%]`, `[80%]`, `[100%]`, `[⚡ 125%]`.
+- **DSP Pre-Amp Gain Boost (101% – 200%):** Hardware-accelerated DSP **`android.media.audiofx.LoudnessEnhancer`** integration provides up to **+1000 mB (~10dB / double perceived loudness)** boost with automatic limiting against audio distortion.
+- **`VolumeBottomSheet`:** Fluid slider with haptic feedback, adaptive volume level icons, `⚡ Boost` badge, and quick preset buttons: `[0%]`, `[50%]`, `[100%]`, `[⚡ 150%]`, `[⚡ 200%]`.
 - **Playback Settings:** Easily accessible from either the Player screen or App Settings.
 
 ---
@@ -95,7 +95,7 @@ graph TD
 | # | Feature | How to Test | Expected Result |
 |---|---|---|---|
 | 1 | **In-App Volume (0% - 100%)** | Tap Volume icon on Player screen / Settings | Volume changes smoothly without changing phone's master volume. |
-| 2 | **Volume Boost (101% - 125%)** | Drag slider past 100% or tap `⚡ 125%` | Volume noticeably louder (+4dB boost) with red icon and Boost badge. |
+| 2 | **Volume Boost (101% - 200%)** | Drag slider past 100% or tap `⚡ 200%` | Volume noticeably louder (+10dB boost) with red icon and Boost badge. |
 | 3 | **Time Greeting & Shelf** | Top of Home screen (For You tab) | Shows correct greeting (Morning/Afternoon/Evening/Night) with contextual shelf. |
 | 4 | **Favorite Artists Carousel** | Home screen | Displays circular artist avatars from your history. |
 | 5 | **Daily Mixes (Mix 1, 2, 3)** | Home screen | Generates blended playlists combining top artists with fresh suggestions. |

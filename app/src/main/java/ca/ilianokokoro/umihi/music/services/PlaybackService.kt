@@ -290,8 +290,8 @@ class PlaybackService : MediaLibraryService() {
         } else {
             player.volume = 1.0f
             val boostPercent = currentVolumePercent - Constants.Player.Volume.BOOST_THRESHOLD
-            // Each 1% boost corresponds to 16 mB gain (up to 400 mB / ~4dB boost)
-            val gainmB = boostPercent * 16
+            // Each 1% boost corresponds to 10 mB gain (up to 1000 mB / ~10dB boost at 200%)
+            val gainmB = boostPercent * 10
             try {
                 loudnessEnhancer?.setTargetGain(gainmB)
                 loudnessEnhancer?.enabled = true

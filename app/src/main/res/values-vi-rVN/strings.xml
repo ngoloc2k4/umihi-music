@@ -202,7 +202,7 @@
 
     <!-- In-App Volume Control -->
     <string name="in_app_volume">Âm lượng ứng dụng</string>
-    <string name="in_app_volume_desc">Tùy chỉnh âm lượng âm thanh độc lập cho ứng dụng (Hỗ trợ tăng âm lượng lên tới 125% cho Android 7+)</string>
+    <string name="in_app_volume_desc">Tùy chỉnh âm lượng âm thanh độc lập cho ứng dụng (Hỗ trợ tăng âm lượng lên tới 200% cho Android 7+)</string>
     <string name="volume_boost_badge">Tăng cường</string>
 
     <!-- Playlist Recommendations -->

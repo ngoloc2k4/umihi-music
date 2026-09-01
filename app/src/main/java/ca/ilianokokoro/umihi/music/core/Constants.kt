@@ -213,7 +213,7 @@ object Constants {
         object Volume {
             const val DEFAULT_PERCENT = 100
             const val MIN_PERCENT = 0
-            const val MAX_PERCENT = 125
+            const val MAX_PERCENT = 200
             const val BOOST_THRESHOLD = 100
         }
 

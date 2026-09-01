@@ -208,7 +208,7 @@
     
     <!-- In-App Volume Control -->
     <string name="in_app_volume">In-App Volume</string>
-    <string name="in_app_volume_desc">Independent in-app audio volume control (Supports volume boost up to 125% for Android 7+)</string>
+    <string name="in_app_volume_desc">Independent in-app audio volume control (Supports volume boost up to 200% for Android 7+)</string>
     <string name="volume_boost_badge">Boost</string>
     
     <!-- Playlist Recommendations -->

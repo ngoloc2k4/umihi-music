@@ -161,7 +161,7 @@ fun VolumeBottomSheet(
                 onValueChange = { newValue ->
                     val rounded = newValue.roundToInt().toFloat()
                     if (rounded.roundToInt() != currentInt) {
-                        if (rounded.roundToInt() == 100 || rounded.roundToInt() == 125 || rounded.roundToInt() == 0) {
+                        if (rounded.roundToInt() == 0 || rounded.roundToInt() == 50 || rounded.roundToInt() == 100 || rounded.roundToInt() == 150 || rounded.roundToInt() == 200) {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     }
@@ -191,7 +191,7 @@ fun VolumeBottomSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "125% (Boost)",
+                    text = "200% (Boost)",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.error,
@@ -206,7 +206,7 @@ fun VolumeBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val presets = listOf(0, 50, 80, 100, 125)
+                val presets = listOf(0, 50, 100, 150, 200)
                 presets.forEach { preset ->
                     val selected = currentInt == preset
                     FilterChip(
@@ -218,13 +218,13 @@ fun VolumeBottomSheet(
                         },
                         label = {
                             Text(
-                                text = if (preset == 125) "⚡ 125%" else "$preset%",
+                                text = if (preset > 100) "⚡ $preset%" else "$preset%",
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (preset == 125) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = if (preset == 125) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedContainerColor = if (preset > 100) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = if (preset > 100) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     )
                 }
