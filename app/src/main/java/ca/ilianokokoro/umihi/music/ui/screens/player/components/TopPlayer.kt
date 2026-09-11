@@ -26,12 +26,16 @@ fun TopPlayer(
     isLyricsShown: Boolean,
     lyricsState: LyricsState,
     positionMs: () -> Long,
-    modifier: Modifier
+    modifier: Modifier,
+    onSeekBackward: () -> Unit = {},
+    onSeekForward: () -> Unit = {},
 ) {
     if (!isLyricsShown) {
         Thumbnail(
             href = currentSong?.thumbnailHref.toString(),
-            modifier = modifier
+            modifier = modifier,
+            onSeekBackward = onSeekBackward,
+            onSeekForward = onSeekForward,
         )
     } else {
         Card(
