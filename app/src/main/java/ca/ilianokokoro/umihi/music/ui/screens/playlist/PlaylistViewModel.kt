@@ -23,6 +23,9 @@ import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 import ca.ilianokokoro.umihi.music.models.PlaylistType
 import ca.ilianokokoro.umihi.music.models.Song
 import ca.ilianokokoro.umihi.music.ui.navigation.viewmodels.SharedViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -426,6 +429,7 @@ class PlaylistViewModel(
                             }
 
                             is ApiResult.Success -> {
+                                fetchRecommendations(apiResult.data)
                                 ScreenState.Success(
                                     playlist = apiResult.data
                                 )
@@ -443,6 +447,204 @@ class PlaylistViewModel(
             }
         }
 
+    }
+
+    private val songDataSource = ca.ilianokokoro.umihi.music.data.datasources.SongDataSource()
+    private val usedSeedIds = mutableSetOf<String>()
+
+    fun refreshRecommendations() {
+        val playlist = getPlaylist() ?: return
+        usedSeedIds.clear()
+        fetchRecommendations(playlist, forceRefresh = true)
+    }
+
+    fun fetchRecommendations(playlist: Playlist, forceRefresh: Boolean = false) {
+        if (playlist.songs.isEmpty()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingRecommendations = true) }
+            try {
+                val settings = datastoreRepository.getSettings()
+                val existingIds = playlist.songs.map { it.youtubeId }.toSet()
+
+                if (forceRefresh) {
+                    usedSeedIds.clear()
+                }
+
+                val sampleSongs = playlist.songs.filterNot { it.youtubeId in usedSeedIds || it.youtubeId.isBlank() }.take(3)
+                sampleSongs.forEach { usedSeedIds.add(it.youtubeId) }
+
+                var suggestedSongs = if (sampleSongs.isNotEmpty()) {
+                    coroutineScope {
+                        sampleSongs.map { song ->
+                            async {
+                                try {
+                                    songDataSource.getRelatedSongs(song.youtubeId, settings)
+                                } catch (_: Exception) {
+                                    emptyList<Song>()
+                                }
+                            }
+                        }.awaitAll().flatten()
+                    }
+                } else {
+                    emptyList()
+                }
+
+                // Fallback search if related songs was empty
+                if (suggestedSongs.isEmpty()) {
+                    val fallbackQuery = playlist.songs.firstOrNull()?.artist?.ifBlank { null }
+                        ?: playlist.info.title.ifBlank { "Top Vietnam Hits Music" }
+                    suggestedSongs = try {
+                        songDataSource.search(fallbackQuery, settings = settings)
+                    } catch (_: Exception) {
+                        emptyList<Song>()
+                    }
+                }
+
+                val filtered = suggestedSongs
+                    .filterNot { it.youtubeId in existingIds }
+                    .distinctBy { it.youtubeId }
+                    .take(20)
+
+                _uiState.update {
+                    it.copy(
+                        recommendedSongs = filtered,
+                        isLoadingRecommendations = false,
+                        hasMoreRecommendations = true,
+                        showInfiniteSuggestions = settings.infinitePlaylistSuggestions
+                    )
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to load playlist recommendations: ${e.message}", exception = e)
+                _uiState.update { it.copy(isLoadingRecommendations = false) }
+            }
+        }
+    }
+
+    fun loadMoreRecommendations() {
+        val playlist = getPlaylist() ?: return
+        val state = _uiState.value
+        if (!state.showInfiniteSuggestions || state.isLoadingMoreRecommendations || state.isLoadingRecommendations || !state.hasMoreRecommendations) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreRecommendations = true) }
+            try {
+                val settings = datastoreRepository.getSettings()
+                val playlistIds = playlist.songs.map { it.youtubeId }.toSet()
+                val currentRecIds = state.recommendedSongs.map { it.youtubeId }.toSet()
+
+                // Pick next seeds: first from unused playlist songs, then from unused recommended songs
+                val nextSeeds = playlist.songs.filterNot { it.youtubeId in usedSeedIds || it.youtubeId.isBlank() }.take(2).ifEmpty {
+                    state.recommendedSongs.filterNot { it.youtubeId in usedSeedIds || it.youtubeId.isBlank() }.take(2)
+                }.ifEmpty {
+                    state.recommendedSongs.filter { it.youtubeId.isNotBlank() }.shuffled().take(2)
+                }
+
+                if (nextSeeds.isEmpty()) {
+                    val query = state.recommendedSongs.lastOrNull()?.artist?.ifBlank { "Vietnam Pop Hits" } ?: "Vietnam Pop Hits"
+                    val searchResults: List<Song> = try {
+                        songDataSource.search(query, settings = settings)
+                    } catch (_: Exception) { emptyList<Song>() }
+
+                    val newUniqueSongs = searchResults
+                        .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
+                        .distinctBy { it.youtubeId }
+                        .take(15)
+
+                    if (newUniqueSongs.isNotEmpty()) {
+                        _uiState.update {
+                            it.copy(
+                                recommendedSongs = it.recommendedSongs + newUniqueSongs,
+                                isLoadingMoreRecommendations = false,
+                                hasMoreRecommendations = true
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(isLoadingMoreRecommendations = false, hasMoreRecommendations = false) }
+                    }
+                    return@launch
+                }
+
+                nextSeeds.forEach { usedSeedIds.add(it.youtubeId) }
+
+                val newRawSongs = coroutineScope {
+                    nextSeeds.map { song ->
+                        async {
+                            try {
+                                songDataSource.getRelatedSongs(song.youtubeId, settings)
+                            } catch (_: Exception) {
+                                emptyList<Song>()
+                            }
+                        }
+                    }.awaitAll().flatten()
+                }
+
+                var newUniqueSongs = newRawSongs
+                    .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
+                    .distinctBy { it.youtubeId }
+                    .take(15)
+
+                if (newUniqueSongs.isEmpty()) {
+                    val query = nextSeeds.firstOrNull()?.artist?.ifBlank { "Vietnam Music Hits" } ?: "Vietnam Music Hits"
+                    val fallbackResults: List<Song> = try {
+                        songDataSource.search(query, settings = settings)
+                    } catch (_: Exception) { emptyList<Song>() }
+
+                    newUniqueSongs = fallbackResults
+                        .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
+                        .distinctBy { it.youtubeId }
+                        .take(15)
+                }
+
+                if (newUniqueSongs.isNotEmpty()) {
+                    val updatedList = state.recommendedSongs + newUniqueSongs
+                    _uiState.update {
+                        it.copy(
+                            recommendedSongs = updatedList,
+                            isLoadingMoreRecommendations = false,
+                            hasMoreRecommendations = true
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMoreRecommendations = false,
+                            hasMoreRecommendations = false
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to load more recommendations: ${e.message}", exception = e)
+                _uiState.update { it.copy(isLoadingMoreRecommendations = false) }
+            }
+        }
+    }
+
+    fun addSongToPlaylist(song: Song) {
+        val playlist = getPlaylist() ?: return
+        viewModelScope.launch {
+            try {
+                val settings = datastoreRepository.getSettings()
+                if (settings.cookies.isEmpty()) {
+                    return@launch
+                }
+                playlistRepository.edit(
+                    playlistId = playlist.info.id,
+                    settings = settings,
+                    videoIdsToAdd = listOf(song.youtubeId)
+                )
+                android.widget.Toast.makeText(
+                    application,
+                    application.getString(R.string.added_to_playlist),
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+                getPlaylistInfoAsync()
+            } catch (e: Exception) {
+                printe(message = "Failed to add song to playlist: ${e.message}", exception = e)
+            }
+        }
     }
 
     private fun updatePlaylistFrom(oldPlaylist: Playlist, updatedPlaylist: Playlist?): Playlist {

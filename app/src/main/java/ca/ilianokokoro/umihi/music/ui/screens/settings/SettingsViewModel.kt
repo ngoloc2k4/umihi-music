@@ -129,6 +129,20 @@ class SettingsViewModel(
         }
     }
 
+    fun updateShowCountrySelectDialog(value: Boolean) {
+        viewModelScope.launch {
+            _uiState.update {
+                _uiState.value.copy(
+                    showCountrySelectDialog = value
+                )
+            }
+        }
+    }
+
+    fun updateCountryCode(countryCode: String) {
+        updateSetting(DatastoreRepository.PreferenceKeys.COUNTRY_CODE, countryCode)
+    }
+
     fun updateShowDownloadDeleteConfirm(value: Boolean) {
         viewModelScope.launch {
             _uiState.update {

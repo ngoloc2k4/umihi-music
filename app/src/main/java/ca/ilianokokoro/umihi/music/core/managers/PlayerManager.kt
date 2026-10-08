@@ -2,6 +2,7 @@ package ca.ilianokokoro.umihi.music.core.managers
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.media3.common.C
@@ -13,8 +14,10 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import ca.ilianokokoro.umihi.music.R
 import ca.ilianokokoro.umihi.music.audio.PlaybackService
+import ca.ilianokokoro.umihi.music.core.ApiResult
 import ca.ilianokokoro.umihi.music.core.Constants
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository
+import ca.ilianokokoro.umihi.music.data.repositories.SongRepository
 import ca.ilianokokoro.umihi.music.extensions.toSong
 import ca.ilianokokoro.umihi.music.models.PlaybackAudioInfo
 import ca.ilianokokoro.umihi.music.models.Playlist
@@ -134,6 +137,7 @@ object PlayerManager {
                     synchronized(this@PlayerManager) {
                         controller = built
                         _controllerState.value = built
+                        setupAutoplayListener(built, appContext)
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -147,6 +151,74 @@ object PlayerManager {
             },
             MoreExecutors.directExecutor()
         )
+    }
+
+    private var autoplayListener: Player.Listener? = null
+    private var isFetchingAutoplay = false
+    private var radioFetchJob: Job? = null
+    private val songRepository = SongRepository()
+
+    private fun setupAutoplayListener(built: MediaController, context: Context) {
+        autoplayListener?.let { built.removeListener(it) }
+        val listener = object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                checkAndTriggerAutoplay(built, context)
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_READY) {
+                    checkAndTriggerAutoplay(built, context)
+                }
+            }
+        }
+        built.addListener(listener)
+        autoplayListener = listener
+    }
+
+    private fun checkAndTriggerAutoplay(controller: MediaController, context: Context) {
+        val currentIndex = controller.currentMediaItemIndex
+        val totalCount = controller.mediaItemCount
+        // When nearing the end of queue (last 2 songs)
+        if (totalCount == 0 || currentIndex < totalCount - 2 || isFetchingAutoplay) {
+            return
+        }
+
+        scope.launch {
+            try {
+                val settings = DatastoreRepository(context.applicationContext).getSettings()
+                if (!settings.infinitePlaylistSuggestions) {
+                    return@launch
+                }
+
+                isFetchingAutoplay = true
+                val lastItem = withContext(Dispatchers.Main.immediate) {
+                    if (controller.mediaItemCount > 0) {
+                        controller.getMediaItemAt(controller.mediaItemCount - 1)
+                    } else null
+                }
+                val lastId = lastItem?.mediaId ?: return@launch
+                if (lastId.isBlank()) return@launch
+
+                songRepository.getRelatedSongs(lastId).collect { result ->
+                    if (result is ApiResult.Success) {
+                        withContext(Dispatchers.Main.immediate) {
+                            val activeController = currentController ?: return@withContext
+                            val existingIds = (0 until activeController.mediaItemCount).map {
+                                activeController.getMediaItemAt(it).mediaId
+                            }.toSet()
+                            val newSongs = result.data.filterNot { it.youtubeId in existingIds }.take(10)
+                            if (newSongs.isNotEmpty()) {
+                                activeController.addMediaItems(newSongs.map { it.mediaItem })
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Ignore autoplay fetch errors
+            } finally {
+                isFetchingAutoplay = false
+            }
+        }
     }
 
     @Synchronized
@@ -256,12 +328,39 @@ object PlayerManager {
         }
     }
 
-    fun playSong(song: Song) {
+    fun playSong(song: Song, autoRadio: Boolean = true) {
         val controller = currentController ?: return
+
+        radioFetchJob?.cancel()
 
         controller.setMediaItem(song.mediaItem)
         controller.prepare()
         controller.play()
+
+        if (!autoRadio || song.youtubeId.isBlank()) {
+            return
+        }
+
+        radioFetchJob = scope.launch {
+            try {
+                songRepository.getRelatedSongs(song.youtubeId).collect { result ->
+                    if (result is ApiResult.Success) {
+                        val relatedSongs = result.data.filter { it.youtubeId != song.youtubeId }
+                        if (relatedSongs.isNotEmpty()) {
+                            withContext(Dispatchers.Main) {
+                                val activeController = currentController ?: return@withContext
+                                if (activeController.currentMediaItem?.mediaId == song.youtubeId) {
+                                    val mediaItems = relatedSongs.map { it.mediaItem }
+                                    activeController.addMediaItems(mediaItems)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // Ignore radio fetch errors; playback of current song continues
+            }
+        }
     }
 
     suspend fun getPlaybackPosition(): Pair<Float, Float>? {
@@ -351,9 +450,38 @@ object PlayerManager {
     }
 
     fun clearQueue() {
+        radioFetchJob?.cancel()
         currentController?.run {
             stop()
             clearMediaItems()
+        }
+    }
+
+    fun forceStop(context: Context? = null) {
+        scope.launch {
+            radioFetchJob?.cancel()
+            cancelSleepTimer()
+
+            withContext(Dispatchers.Main) {
+                currentController?.run {
+                    stop()
+                    clearMediaItems()
+                }
+            }
+
+            context?.let { ctx ->
+                try {
+                    val intent = Intent(ctx.applicationContext, PlaybackService::class.java).apply {
+                        action = "ACTION_FORCE_STOP"
+                    }
+                    ctx.startService(intent)
+                    Toast.makeText(
+                        ctx,
+                        ctx.getString(R.string.force_stop_toast),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (_: Exception) {}
+            }
         }
     }
 

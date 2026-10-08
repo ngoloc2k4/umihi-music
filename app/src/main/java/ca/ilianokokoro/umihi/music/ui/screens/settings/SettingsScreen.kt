@@ -16,8 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Login
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.BrightnessAuto
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.DarkMode
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.StayCurrentPortrait
@@ -64,7 +67,9 @@ import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.DiagnosticsLogBotto
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.HiddenPlaylistsBottomSheet
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.ThemeSelectorBottomSheet
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.UpdateChannelBottomSheet
+import ca.ilianokokoro.umihi.music.ui.components.dialog.AVAILABLE_COUNTRIES
 import ca.ilianokokoro.umihi.music.ui.components.dialog.ConfirmDialog
+import ca.ilianokokoro.umihi.music.ui.components.dialog.CountrySelectDialog
 import ca.ilianokokoro.umihi.music.ui.components.dialog.DownloadLocationDialog
 import ca.ilianokokoro.umihi.music.ui.navigation.viewmodels.SharedViewModel
 import ca.ilianokokoro.umihi.music.ui.screens.settings.components.BooleanSettingItem
@@ -250,6 +255,18 @@ fun SettingsScreen(
                                     )
                                 }
                             )
+                            SettingSpacer()
+                            val currentCountryOption = AVAILABLE_COUNTRIES.find {
+                                it.code.equals(screenState.settings.countryCode, ignoreCase = true)
+                            } ?: AVAILABLE_COUNTRIES.first()
+                            SettingsItem(
+                                title = stringResource(R.string.select_country_region),
+                                subtitle = "${currentCountryOption.flag}  ${currentCountryOption.name}",
+                                leadingIcon = Icons.Outlined.Language,
+                                onClick = {
+                                    settingsViewModel.updateShowCountrySelectDialog(true)
+                                }
+                            )
                         }
 
                         SettingsSection(
@@ -261,6 +278,19 @@ fun SettingsScreen(
                                 leadingIcon = Icons.Outlined.Memory,
                                 value = screenState.settings.useAudioOffload,
                                 onToggle = settingsViewModel::updateAudioOffloadSetting
+                            )
+                            SettingSpacer()
+                            BooleanSettingItem(
+                                title = stringResource(R.string.infinite_playlist_suggestions_title),
+                                subtitle = stringResource(R.string.infinite_playlist_suggestions_desc),
+                                leadingIcon = Icons.Outlined.AutoAwesome,
+                                value = screenState.settings.infinitePlaylistSuggestions,
+                                onToggle = {
+                                    settingsViewModel.updateSetting(
+                                        PreferenceKeys.INFINITE_PLAYLIST_SUGGESTIONS,
+                                        it
+                                    )
+                                }
                             )
                         }
 
@@ -499,6 +529,17 @@ fun SettingsScreen(
                                 },
                                 onDismiss = {
                                     settingsViewModel.updateShowLoginClearConfirm(false)
+                                }
+                            )
+                        } else if (uiState.showCountrySelectDialog) {
+                            CountrySelectDialog(
+                                selectedCountryCode = screenState.settings.countryCode,
+                                onSelect = { newCode ->
+                                    settingsViewModel.updateCountryCode(newCode)
+                                    settingsViewModel.updateShowCountrySelectDialog(false)
+                                },
+                                onClose = {
+                                    settingsViewModel.updateShowCountrySelectDialog(false)
                                 }
                             )
                         } else if (uiState.showHiddenPlaylistsSheet) {

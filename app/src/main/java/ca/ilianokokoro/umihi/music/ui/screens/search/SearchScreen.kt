@@ -10,12 +10,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExpandedDockedSearchBarWithGap
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -197,6 +201,50 @@ fun SearchScreenContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp)
+        ) {
+            FilterChip(
+                selected = uiState.activeFilter == SearchFilter.ALL,
+                onClick = { searchViewModel.onFilterChange(SearchFilter.ALL) },
+                label = { Text(stringResource(R.string.search_all)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.Search,
+                        contentDescription = null,
+                        modifier = Modifier.padding(2.dp)
+                    )
+                }
+            )
+            FilterChip(
+                selected = uiState.activeFilter == SearchFilter.SONGS,
+                onClick = { searchViewModel.onFilterChange(SearchFilter.SONGS) },
+                label = { Text(stringResource(R.string.search_songs)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.MusicNote,
+                        contentDescription = null,
+                        modifier = Modifier.padding(2.dp)
+                    )
+                }
+            )
+            FilterChip(
+                selected = uiState.activeFilter == SearchFilter.VIDEOS,
+                onClick = { searchViewModel.onFilterChange(SearchFilter.VIDEOS) },
+                label = { Text(stringResource(R.string.search_videos)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.Videocam,
+                        contentDescription = null,
+                        modifier = Modifier.padding(2.dp)
+                    )
+                }
+            )
+        }
+
         when (val screenState = uiState.screenState) {
             is ScreenState.Error -> {
                 ErrorMessage(

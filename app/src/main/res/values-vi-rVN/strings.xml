@@ -192,4 +192,62 @@
     <string name="database_desctruction_text">Bản cập nhật này đã thay đổi cách lưu trữ một số dữ liệu, do đó dữ liệu tải xuống cục bộ của bạn đã bị đặt lại. Các tệp đã tải xuống của bạn vẫn còn trên thiết bị.\n\nNhấn nút tải xuống trên danh sách phát đã tải xuống của bạn để khôi phục.</string>
     <string name="lyrics">Lời bài hát</string>
     <string name="no_lyrics_found">Không tìm thấy lời bài hát</string>
+
+    <!-- Custom Ported Features -->
+    <string name="search_all">Tất cả</string>
+    <string name="search_songs">Bài hát</string>
+    <string name="search_videos">Video</string>
+    <string name="your_playlists">Danh sách của bạn</string>
+    <string name="listen_again">Nghe lại</string>
+    <string name="video">Video</string>
+    <string name="force_stop">Dừng hoàn toàn phát nhạc</string>
+    <string name="force_stop_toast">Đã dừng phát nhạc hoàn toàn</string>
+    <string name="recently_played">Đã nghe gần đây</string>
+    <string name="clear_history">Xóa lịch sử</string>
+    <string name="select_country_region">Quốc gia / Khu vực nội dung</string>
+    <string name="category_for_you">Dành cho bạn</string>
+    <string name="category_charts">Bảng xếp hạng</string>
+    <string name="category_chill">Thư giãn</string>
+    <string name="category_workout">Tập luyện</string>
+    <string name="category_focus">Tập trung</string>
+    <string name="category_sleep">Ngủ ngon</string>
+    <string name="mix_from_artist">Tuyển tập: %1$s &amp; tương tự</string>
+    <string name="top_charts">Bảng xếp hạng hàng đầu</string>
+
+    <string name="greeting_morning">Chào buổi sáng</string>
+    <string name="greeting_afternoon">Chào buổi chiều</string>
+    <string name="greeting_evening">Chào buổi tối</string>
+    <string name="greeting_night">Đêm muộn &amp; Thư giãn</string>
+    <string name="context_morning_title">☕ Cà phê sáng &amp; Năng lượng tích cực</string>
+    <string name="context_afternoon_title">💻 Tập trung làm việc &amp; Học tập</string>
+    <string name="context_evening_title">🌇 Thư giãn buổi tối</string>
+    <string name="context_night_title">🌙 Nhạc đêm nhẹ nhàng &amp; Ru ngủ</string>
+    <string name="supermix_title">✨ My Supermix (Tuyển tập vô tận)</string>
+    <string name="supermix_subtitle">Tuyển tập kết hợp bài hát yêu thích &amp; đề xuất</string>
+    <string name="daily_mix_title">💿 Daily Mix %1$d</string>
+    <string name="forgotten_favorites_title">⏳ Giai điệu bạn đã quên</string>
+    <string name="forgotten_favorites_subtitle">Những bài hát bạn từng nghe rất nhiều</string>
+    <string name="discover_weekly_title">🌱 Khám phá bài hát mới</string>
+    <string name="discover_weekly_subtitle">Tuyển chọn các bài hát mới theo gu âm nhạc của bạn</string>
+    <string name="favorite_artists_title">🎤 Nghệ sĩ bạn nghe nhiều nhất</string>
+    <string name="top_charts_title">🔥 Bảng xếp hạng Top 100</string>
+    <string name="trending_tiktok_title">🎵 Thịnh hành &amp; Hot TikTok</string>
+    <string name="movie_ost_title">🎬 Nhạc Phim Hay Nhất (OST)</string>
+    <string name="cafe_acoustic_title">☕ Acoustic Quán Cà Phê</string>
+
+    <string name="in_app_volume">Âm lượng ứng dụng</string>
+    <string name="in_app_volume_desc">Tùy chỉnh âm lượng độc lập cho ứng dụng</string>
+    <string name="volume_boost_badge">Tăng cường</string>
+
+    <string name="recommended_for_playlist">Gợi ý cho danh sách này</string>
+    <string name="recommended_for_playlist_subtitle">Dựa trên các bài hát trong danh sách phát</string>
+    <string name="refresh_recommendations">Làm mới gợi ý</string>
+    <string name="add_to_playlist">Thêm vào danh sách</string>
+    <string name="added_to_playlist">Đã thêm vào danh sách phát</string>
+    <string name="empty_playlist_suggestions">Danh sách này đang trống. Hãy nghe thử các bài hát gợi ý dưới đây:</string>
+    <string name="infinite_playlist_suggestions_title">Gợi ý bài hát vô tận</string>
+    <string name="infinite_playlist_suggestions_desc">Tự động tải thêm các bài hát tương tự khi cuộn xuống cuối danh sách phát</string>
+    <string name="load_more_suggestions">Tải thêm gợi ý</string>
+    <string name="loading_more_suggestions">Đang tìm thêm bài hát phù hợp…</string>
+
 </resources>

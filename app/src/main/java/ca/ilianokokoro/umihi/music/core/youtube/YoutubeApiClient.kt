@@ -319,11 +319,58 @@ object YoutubeApiClient {
     }
 
 
-    suspend fun search(query: String): String {
+    suspend fun browseHome(settings: UmihiSettings? = null, fields: String? = null): String {
+        return requestWithContext(
+            url = Constants.YoutubeApi.Browse.URL,
+            idName = "browseId",
+            id = Constants.YoutubeApi.Browse.HOME_BROWSE_ID,
+            settings = settings,
+            fields = fields,
+        )
+    }
+
+    suspend fun search(
+        query: String,
+        filterParams: String? = null,
+        settings: UmihiSettings? = null
+    ): String {
         return requestWithContext(
             url = Constants.YoutubeApi.Search.URL,
             idName = "query",
-            id = query
+            id = query,
+            settings = settings,
+            params = filterParams
+        )
+    }
+
+    suspend fun getNext(
+        videoId: String,
+        playlistId: String? = "RDAMVM$videoId",
+        settings: UmihiSettings? = null,
+        fields: String? = null,
+    ): String {
+        val baseBody = YoutubeAuthHelper.buildContextBody(
+            idName = "videoId",
+            id = videoId,
+            settings = settings,
+            client = Constants.YoutubeApi.Client.WEB_REMIX
+        )
+
+        val body = buildJsonObject {
+            baseBody.forEach { (key, value) ->
+                put(key, value)
+            }
+            if (playlistId != null) {
+                put("playlistId", JsonPrimitive(playlistId))
+            }
+            put("isAudioOnly", JsonPrimitive(true))
+        }
+
+        return requestWithBody(
+            url = Constants.YoutubeApi.Next.URL,
+            body = body,
+            settings = settings,
+            fields = fields
         )
     }
 
@@ -343,7 +390,7 @@ object YoutubeApiClient {
 
         val httpUrl = if (fields != null) {
             url.toHttpUrl().newBuilder()
-                .addQueryParameter($$"$fields", fields)
+                .addQueryParameter("\$fields", fields)
                 .build()
         } else {
             url.toHttpUrl()
@@ -379,13 +426,15 @@ object YoutubeApiClient {
         client: JsonObject? = null,
         visitorData: String? = null,
         fields: String? = null,
+        params: String? = null,
     ): String {
         val body = YoutubeAuthHelper.buildContextBody(
-            idName,
-            id,
-            settings,
-            client,
-            visitorData
+            idName = idName,
+            id = id,
+            settings = settings,
+            client = client,
+            visitorData = visitorData,
+            params = params
         )
 
         return requestWithBody(

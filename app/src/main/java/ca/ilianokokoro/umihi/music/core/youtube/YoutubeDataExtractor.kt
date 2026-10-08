@@ -13,6 +13,8 @@ import ca.ilianokokoro.umihi.music.core.helpers.UmihiHelper.safeObject
 import ca.ilianokokoro.umihi.music.data.database.AppDatabase
 import ca.ilianokokoro.umihi.music.extensions.getClientName
 import ca.ilianokokoro.umihi.music.models.AddToPlaylistOption
+import ca.ilianokokoro.umihi.music.models.HomeSection
+import ca.ilianokokoro.umihi.music.models.HomeSectionItem
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 import ca.ilianokokoro.umihi.music.models.PlaylistType
 import ca.ilianokokoro.umihi.music.models.Song
@@ -710,28 +712,386 @@ object YoutubeDataExtractor {
             ?.safeObject()?.get("tabs")
             ?.safeArray() ?: return emptyList()
 
-
         val selectedTab = tabs.firstOrNull {
             it.safeObject()?.get("tabRenderer")
                 ?.safeObject()?.get("selected")
                 ?.jsonPrimitive?.booleanOrNull == true
-        }?.safeObject()?.get("tabRenderer")?.safeObject() ?: return emptyList()
+        }?.safeObject()?.get("tabRenderer")?.safeObject()
+            ?: tabs.firstOrNull()?.safeObject()?.get("tabRenderer")?.safeObject()
+            ?: return emptyList()
 
         val contents = selectedTab["content"]
             ?.safeObject()?.get("sectionListRenderer")
             ?.safeObject()?.get("contents")
             ?.safeArray() ?: return emptyList()
 
-        val songRendererList =
-            contents
-                .firstNotNullOfOrNull {
-                    it.safeObject()?.get("musicShelfRenderer")
-                        ?.safeObject()?.get("contents")
-                        ?.safeArray()
-                }
-                ?: return emptyList()
+        val songs = mutableListOf<Song>()
 
-        return songRendererList.mapNotNull { extractSong(it) }
+        for (section in contents) {
+            val sectionObj = section.safeObject() ?: continue
+
+            // 1. musicCardShelfRenderer (Top result)
+            val cardShelf = sectionObj["musicCardShelfRenderer"]?.safeObject()
+            if (cardShelf != null) {
+                val title = cardShelf["title"]?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+                val subtitleRuns = cardShelf["subtitle"]?.safeObject()
+                    ?.get("runs")?.safeArray()
+                val artist = subtitleRuns?.mapNotNull { it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull }?.joinToString("") ?: ""
+                val videoId = cardShelf["title"]?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("navigationEndpoint")?.safeObject()
+                    ?.get("watchEndpoint")?.safeObject()
+                    ?.get("videoId")?.jsonPrimitive?.contentOrNull
+                    ?: cardShelf["onTap"]?.safeObject()
+                        ?.get("watchEndpoint")?.safeObject()
+                        ?.get("videoId")?.jsonPrimitive?.contentOrNull
+
+                val thumbnailRenderer = cardShelf["thumbnail"] ?: cardShelf["thumbnailRenderer"]
+                val thumbnail = thumbnailRenderer?.let { getBestThumbnailUrl(it) } ?: ""
+
+                if (videoId != null && title != null) {
+                    val isVideo = subtitleRuns?.any { it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull?.contains("Video", ignoreCase = true) == true } == true
+                    val cardSong = Song(
+                        youtubeId = videoId,
+                        title = title,
+                        artists = artist,
+                        thumbnailHref = thumbnail
+                    ).also { it.isVideo = isVideo }
+                    songs.add(cardSong)
+                }
+            }
+
+            // 2. musicShelfRenderer
+            val shelf = sectionObj["musicShelfRenderer"]?.safeObject()
+            if (shelf != null) {
+                val shelfTitle = shelf["title"]?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull ?: ""
+                val isVideoShelf = shelfTitle.contains("Video", ignoreCase = true)
+
+                val shelfItems = shelf["contents"]?.safeArray() ?: continue
+                for (item in shelfItems) {
+                    extractSong(item)?.let { song ->
+                        if (isVideoShelf) {
+                            song.isVideo = true
+                        }
+                        songs.add(song)
+                    }
+                }
+            }
+        }
+
+        return songs.distinctBy { it.youtubeId }
+    }
+
+    fun extractHomeSections(
+        jsonString: String,
+        settings: UmihiSettings
+    ): List<HomeSection> {
+        val json = Json.parseToJsonElement(jsonString).jsonObject
+        val homeSections = mutableListOf<HomeSection>()
+
+        val tabs = json["contents"]
+            ?.safeObject()?.get("singleColumnBrowseResultsRenderer")
+            ?.safeObject()?.get("tabs")
+            ?.safeArray()
+            ?: json["contents"]
+                ?.safeObject()?.get("twoColumnBrowseResultsRenderer")
+                ?.safeObject()?.get("tabs")
+                ?.safeArray()
+            ?: return emptyList()
+
+        val selectedTab = tabs.firstOrNull {
+            it.safeObject()?.get("tabRenderer")
+                ?.safeObject()?.get("selected")
+                ?.jsonPrimitive?.booleanOrNull == true
+        }?.safeObject()?.get("tabRenderer")?.safeObject()
+            ?: tabs.firstOrNull()?.safeObject()?.get("tabRenderer")?.safeObject()
+            ?: return emptyList()
+
+        val sectionList = selectedTab["content"]
+            ?.safeObject()?.get("sectionListRenderer")
+            ?.safeObject()?.get("contents")
+            ?.safeArray() ?: return emptyList()
+
+        for (sectionElement in sectionList) {
+            val sectionObj = sectionElement.safeObject() ?: continue
+
+            // 1. musicCarouselShelfRenderer
+            val carousel = sectionObj["musicCarouselShelfRenderer"]?.safeObject()
+            if (carousel != null) {
+                val header = carousel["header"]?.safeObject()
+                    ?.get("musicCarouselShelfBasicHeaderRenderer")?.safeObject()
+                val title = header?.get("title")?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+                    ?: continue
+
+                val subtitle = header["strapline"]?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+
+                val items = mutableListOf<HomeSectionItem>()
+                val contents = carousel["contents"]?.safeArray() ?: continue
+
+                for (item in contents) {
+                    val responsiveItem = item.safeObject()?.get("musicResponsiveListItemRenderer")
+                    if (responsiveItem != null) {
+                        extractSong(item)?.let { song ->
+                            items.add(HomeSectionItem.SongItem(song))
+                        }
+                        continue
+                    }
+
+                    val twoRowItem = item.safeObject()?.get("musicTwoRowItemRenderer")?.safeObject()
+                    if (twoRowItem != null) {
+                        val navEndpoint = twoRowItem["navigationEndpoint"]?.safeObject()
+                        if (navEndpoint?.get("watchEndpoint") != null) {
+                            extractSongFromTwoRowItem(item)?.let { song ->
+                                items.add(HomeSectionItem.SongItem(song))
+                            }
+                        } else if (navEndpoint?.get("browseEndpoint") != null) {
+                            parsePlaylistItem(item)?.let { playlist ->
+                                items.add(HomeSectionItem.PlaylistItem(playlist))
+                            }
+                        }
+                    }
+                }
+
+                if (items.isNotEmpty()) {
+                    homeSections.add(
+                        HomeSection(
+                            id = title,
+                            title = title,
+                            subtitle = subtitle,
+                            items = items
+                        )
+                    )
+                }
+                continue
+            }
+
+            // 2. musicShelfRenderer
+            val shelf = sectionObj["musicShelfRenderer"]?.safeObject()
+            if (shelf != null) {
+                val title = shelf["title"]?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+                    ?: "Recommended"
+
+                val items = mutableListOf<HomeSectionItem>()
+                val contents = shelf["contents"]?.safeArray() ?: continue
+
+                for (item in contents) {
+                    extractSong(item)?.let { song ->
+                        items.add(HomeSectionItem.SongItem(song))
+                    }
+                }
+
+                if (items.isNotEmpty()) {
+                    homeSections.add(
+                        HomeSection(
+                            id = title,
+                            title = title,
+                            items = items
+                        )
+                    )
+                }
+                continue
+            }
+
+            // 3. gridRenderer
+            val grid = sectionObj["gridRenderer"]?.safeObject()
+            if (grid != null) {
+                val header = grid["header"]?.safeObject()
+                    ?.get("gridHeaderRenderer")?.safeObject()
+                val title = header?.get("title")?.safeObject()
+                    ?.get("runs")?.safeArray()?.getOrNull(0)
+                    ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+                    ?: "Playlists"
+
+                val items = mutableListOf<HomeSectionItem>()
+                val contents = grid["items"]?.safeArray() ?: continue
+
+                for (item in contents) {
+                    val twoRowItem = item.safeObject()?.get("musicTwoRowItemRenderer")?.safeObject()
+                    if (twoRowItem != null) {
+                        val navEndpoint = twoRowItem["navigationEndpoint"]?.safeObject()
+                        if (navEndpoint?.get("watchEndpoint") != null) {
+                            extractSongFromTwoRowItem(item)?.let { song ->
+                                items.add(HomeSectionItem.SongItem(song))
+                            }
+                        } else if (navEndpoint?.get("browseEndpoint") != null) {
+                            parsePlaylistItem(item)?.let { playlist ->
+                                items.add(HomeSectionItem.PlaylistItem(playlist))
+                            }
+                        }
+                    }
+                }
+
+                if (items.isNotEmpty()) {
+                    homeSections.add(
+                        HomeSection(
+                            id = title,
+                            title = title,
+                            items = items
+                        )
+                    )
+                }
+            }
+        }
+
+        return homeSections
+    }
+
+    fun extractSongFromTwoRowItem(item: JsonElement): Song? {
+        val renderer = item.safeObject()?.get("musicTwoRowItemRenderer")?.safeObject() ?: return null
+
+        val navEndpoint = renderer["navigationEndpoint"]?.safeObject() ?: return null
+        val watchEndpoint = navEndpoint["watchEndpoint"]?.safeObject() ?: return null
+        val videoId = watchEndpoint["videoId"]?.jsonPrimitive?.contentOrNull ?: return null
+
+        val title = renderer["title"]?.safeObject()
+            ?.get("runs")?.safeArray()?.getOrNull(0)
+            ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull ?: return null
+
+        val subtitleRuns = renderer["subtitle"]?.safeObject()
+            ?.get("runs")?.safeArray()
+        val artist = subtitleRuns?.mapNotNull { it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull }
+            ?.joinToString("") ?: ""
+
+        val isVideo = subtitleRuns?.any {
+            it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull?.contains("Video", ignoreCase = true) == true
+        } == true
+
+        val thumbnailRenderer = renderer["thumbnailRenderer"] ?: return null
+        val thumbnailUrl = getBestThumbnailUrl(thumbnailRenderer)
+
+        return Song(
+            youtubeId = videoId,
+            title = title,
+            artists = artist,
+            thumbnailHref = thumbnailUrl
+        ).also {
+            it.isVideo = isVideo
+        }
+    }
+
+    fun extractSongFromPlaylistPanelVideoRenderer(renderer: JsonObject): Song? {
+        val videoId = renderer["videoId"]?.jsonPrimitive?.contentOrNull ?: return null
+        if (videoId.isBlank()) return null
+
+        val title = renderer["title"]?.safeObject()?.get("runs")?.safeArray()?.firstOrNull()
+            ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+            ?: renderer["title"]?.safeObject()?.get("simpleText")?.jsonPrimitive?.contentOrNull
+            ?: ""
+        if (title.isBlank()) return null
+
+        val shortBylineRuns = renderer["shortBylineText"]?.safeObject()?.get("runs")?.safeArray()
+        val longBylineRuns = renderer["longBylineText"]?.safeObject()?.get("runs")?.safeArray()
+
+        var artist = shortBylineRuns?.mapNotNull { it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull }
+            ?.joinToString("") ?: ""
+        if (artist.isBlank() && longBylineRuns != null) {
+            artist = longBylineRuns.firstOrNull()?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull ?: ""
+        }
+
+        val duration = renderer["lengthText"]?.safeObject()?.get("runs")?.safeArray()?.firstOrNull()
+            ?.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+            ?: renderer["lengthText"]?.safeObject()?.get("simpleText")?.jsonPrimitive?.contentOrNull
+            ?: ""
+
+        val thumbnailRenderer = renderer["thumbnail"] ?: renderer["thumbnailRenderer"]
+        val thumbnailUrl = thumbnailRenderer?.let { getBestThumbnailUrl(it) } ?: ""
+
+        val isExplicit = renderer["badges"]?.safeArray()?.any { badge ->
+            badge.safeObject()?.get("musicInlineBadgeRenderer")
+                ?.safeObject()?.get("icon")?.safeObject()
+                ?.get("iconType")?.jsonPrimitive?.contentOrNull == "MUSIC_EXPLICIT_BADGE"
+        } ?: false
+
+        val isVideo = (shortBylineRuns ?: longBylineRuns)?.any {
+            it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull?.contains("Video", ignoreCase = true) == true
+        } ?: false
+
+        return Song(
+            youtubeId = videoId,
+            title = title,
+            artists = artist,
+            duration = duration,
+            thumbnailHref = thumbnailUrl,
+            isExplicit = isExplicit
+        ).also {
+            it.isVideo = isVideo
+        }
+    }
+
+    fun extractRelatedSongs(jsonString: String): List<Song> {
+        val json = Json.parseToJsonElement(jsonString).jsonObject
+        val songs = mutableListOf<Song>()
+        val seenIds = mutableSetOf<String>()
+
+        fun processVideoRenderer(renderer: JsonObject) {
+            val song = extractSongFromPlaylistPanelVideoRenderer(renderer)
+            if (song != null && song.youtubeId.isNotBlank() && seenIds.add(song.youtubeId)) {
+                songs.add(song)
+            }
+        }
+
+        fun parsePanelContents(contents: JsonArray) {
+            for (elem in contents) {
+                val itemObj = elem.safeObject() ?: continue
+                val videoRenderer = itemObj["playlistPanelVideoRenderer"]?.safeObject()
+                    ?: itemObj["playlistPanelVideoWrapperRenderer"]?.safeObject()
+                        ?.get("primaryRenderer")?.safeObject()
+                        ?.get("playlistPanelVideoRenderer")?.safeObject()
+                if (videoRenderer != null) {
+                    processVideoRenderer(videoRenderer)
+                }
+            }
+        }
+
+        // 1. Check tabs in singleColumnMusicWatchNextResultsRenderer
+        val tabs = json["contents"]?.safeObject()
+            ?.get("singleColumnMusicWatchNextResultsRenderer")?.safeObject()
+            ?.get("tabbedRenderer")?.safeObject()
+            ?.get("watchNextTabbedResultsRenderer")?.safeObject()
+            ?.get("tabs")?.safeArray()
+
+        tabs?.forEach { tab ->
+            val panelContents = tab.safeObject()
+                ?.get("tabRenderer")?.safeObject()
+                ?.get("content")?.safeObject()
+                ?.get("musicQueueRenderer")?.safeObject()
+                ?.get("content")?.safeObject()
+                ?.get("playlistPanelRenderer")?.safeObject()
+                ?.get("contents")?.safeArray()
+            if (panelContents != null) {
+                parsePanelContents(panelContents)
+            }
+        }
+
+        // 2. Check continuation
+        val continuationContents = json["continuationContents"]?.safeObject()
+            ?.get("playlistPanelContinuation")?.safeObject()
+            ?.get("contents")?.safeArray()
+        if (continuationContents != null) {
+            parsePanelContents(continuationContents)
+        }
+
+        // 3. Fallback: Check if response has search/shelf results
+        if (songs.isEmpty()) {
+            val fallbackSongs = extractSearchResults(jsonString)
+            for (fallback in fallbackSongs) {
+                if (seenIds.add(fallback.youtubeId)) {
+                    songs.add(fallback)
+                }
+            }
+        }
+
+        return songs
     }
 
 
@@ -949,10 +1309,26 @@ object YoutubeDataExtractor {
         val unavailable =
             songContent["musicItemRendererDisplayPolicy"]?.jsonPrimitive?.contentOrNull == "MUSIC_ITEM_RENDERER_DISPLAY_POLICY_GREY_OUT"
         val title = getSongInfo(songContent, SongInfoType.TITLE)
-        val artists = getSongInfo(songContent, SongInfoType.ARTISTS)
+        val artists = extractArtistFromFlexColumns(songContent).ifBlank {
+            getSongInfo(songContent, SongInfoType.ARTISTS)
+        }
         val videoId = songContent["playlistItemData"]
             ?.safeObject()?.get("videoId")
-            ?.jsonPrimitive?.contentOrNull ?: return null
+            ?.jsonPrimitive?.contentOrNull
+            ?: songContent["navigationEndpoint"]
+                ?.safeObject()?.get("watchEndpoint")
+                ?.safeObject()?.get("videoId")
+                ?.jsonPrimitive?.contentOrNull
+            ?: songContent["overlay"]
+                ?.safeObject()?.get("musicItemThumbnailOverlayRenderer")
+                ?.safeObject()?.get("content")
+                ?.safeObject()?.get("musicPlayButtonRenderer")
+                ?.safeObject()?.get("playNavigationEndpoint")
+                ?.safeObject()?.get("watchEndpoint")
+                ?.safeObject()?.get("videoId")
+                ?.jsonPrimitive?.contentOrNull
+            ?: extractVideoIdFromFlexColumns(songContent)
+            ?: return null
 
         val setVideoId = songContent["playlistItemData"]
             ?.safeObject()?.get("playlistSetVideoId")
@@ -989,6 +1365,8 @@ object YoutubeDataExtractor {
             ?.safeObject()?.get("likeStatus")
             ?.jsonPrimitive?.contentOrNull == "LIKE"
 
+        val isVideo = checkIfVideo(songContent)
+
         return Song(
             youtubeId = videoId,
             title = title,
@@ -1000,6 +1378,7 @@ object YoutubeDataExtractor {
             isAvailable = !unavailable
         ).also { song ->
             song.setVideoId = setVideoId
+            song.isVideo = isVideo
         }
 
     }
@@ -1022,6 +1401,66 @@ object YoutubeDataExtractor {
             extractRemovalSetVideoId(value)?.let { return it }
         }
         return null
+    }
+
+    private fun extractVideoIdFromFlexColumns(songContent: JsonObject): String? {
+        val flexColumns = songContent["flexColumns"]?.safeArray() ?: return null
+        for (column in flexColumns) {
+            val runs = column.safeObject()?.get("musicResponsiveListItemFlexColumnRenderer")
+                ?.safeObject()?.get("text")
+                ?.safeObject()?.get("runs")
+                ?.safeArray() ?: continue
+            for (run in runs) {
+                val vid = run.safeObject()?.get("navigationEndpoint")
+                    ?.safeObject()?.get("watchEndpoint")
+                    ?.safeObject()?.get("videoId")
+                    ?.jsonPrimitive?.contentOrNull
+                if (vid != null) return vid
+            }
+        }
+        return null
+    }
+
+    private fun extractArtistFromFlexColumns(songContent: JsonObject): String {
+        val flexColumns = songContent["flexColumns"]?.safeArray() ?: return ""
+        val artistColumn = flexColumns.getOrNull(1)?.safeObject()
+            ?.get("musicResponsiveListItemFlexColumnRenderer")
+            ?.safeObject()?.get("text")
+            ?.safeObject()?.get("runs")
+            ?.safeArray() ?: return getSongInfo(songContent, SongInfoType.ARTISTS)
+
+        val runsText = artistColumn.mapNotNull {
+            it.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull
+        }
+
+        val filteredRuns = if (runsText.firstOrNull()?.equals("Song", ignoreCase = true) == true ||
+            runsText.firstOrNull()?.equals("Video", ignoreCase = true) == true
+        ) {
+            runsText.drop(2)
+        } else {
+            runsText
+        }
+
+        return filteredRuns.joinToString("").ifEmpty {
+            getSongInfo(songContent, SongInfoType.ARTISTS)
+        }
+    }
+
+    private fun checkIfVideo(songContent: JsonObject): Boolean {
+        val flexColumns = songContent["flexColumns"]?.safeArray() ?: return false
+        for (column in flexColumns) {
+            val runs = column.safeObject()?.get("musicResponsiveListItemFlexColumnRenderer")
+                ?.safeObject()?.get("text")
+                ?.safeObject()?.get("runs")
+                ?.safeArray() ?: continue
+            for (run in runs) {
+                val text = run.safeObject()?.get("text")?.jsonPrimitive?.contentOrNull ?: continue
+                if (text.equals("Video", ignoreCase = true) || text.contains("music video", ignoreCase = true)) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 
 

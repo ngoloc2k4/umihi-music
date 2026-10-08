@@ -4,12 +4,59 @@ import ca.ilianokokoro.umihi.music.core.Constants
 import ca.ilianokokoro.umihi.music.core.youtube.YoutubeApiClient
 import ca.ilianokokoro.umihi.music.core.youtube.YoutubeDataExtractor
 import ca.ilianokokoro.umihi.music.models.AddToPlaylistOption
+import ca.ilianokokoro.umihi.music.models.HomeSection
+import ca.ilianokokoro.umihi.music.models.HomeSectionItem
 import ca.ilianokokoro.umihi.music.models.Playlist
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 import ca.ilianokokoro.umihi.music.models.UmihiSettings
 import ca.ilianokokoro.umihi.music.models.enums.Privacy
 
 class PlaylistDataSource {
+    suspend fun retrieveHomeSections(settings: UmihiSettings): List<HomeSection> {
+        return YoutubeDataExtractor.extractHomeSections(
+            YoutubeApiClient.browseHome(settings),
+            settings
+        )
+    }
+
+    suspend fun retrieveChartsSections(settings: UmihiSettings): List<HomeSection> {
+        return try {
+            val result = YoutubeDataExtractor.extractHomeSections(
+                YoutubeApiClient.browse(Constants.YoutubeApi.Browse.CHARTS_BROWSE_ID, settings),
+                settings
+            )
+            if (result.isNotEmpty()) result else retrieveHomeSections(settings)
+        } catch (_: Exception) {
+            retrieveHomeSections(settings)
+        }
+    }
+
+    suspend fun retrieveMoodSections(query: String, title: String, settings: UmihiSettings): List<HomeSection> {
+        return try {
+            val songs = YoutubeDataExtractor.extractSearchResults(
+                YoutubeApiClient.search(
+                    query = query,
+                    filterParams = Constants.YoutubeApi.Search.FILTER_SONGS,
+                    settings = settings
+                )
+            )
+            if (songs.isNotEmpty()) {
+                listOf(
+                    HomeSection(
+                        id = query,
+                        title = title,
+                        subtitle = null,
+                        items = songs.map { HomeSectionItem.SongItem(it) }
+                    )
+                )
+            } else {
+                emptyList()
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     suspend fun retrieveAll(settings: UmihiSettings): List<PlaylistInfo> {
         return YoutubeDataExtractor.extractPlaylists(
             YoutubeApiClient.browse(

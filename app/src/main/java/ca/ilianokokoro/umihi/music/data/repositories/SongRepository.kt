@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
+import ca.ilianokokoro.umihi.music.models.UmihiSettings
+
 class SongRepository(
     private val application: Application? = null
 ) {
@@ -20,7 +22,11 @@ class SongRepository(
     private val localSongDataSource =
         application?.let { AppDatabase.getInstance(it).songRepository() }
 
-    fun search(query: String): Flow<ApiResult<List<Song>>> {
+    fun search(
+        query: String,
+        filterParams: String? = null,
+        settings: UmihiSettings? = null
+    ): Flow<ApiResult<List<Song>>> {
         return flow {
             emit(ApiResult.Loading)
             val offlineMode = datastoreRepository?.getSettings()?.offlineMode == true
@@ -28,7 +34,7 @@ class SongRepository(
                 val localSongs = localSongDataSource?.searchDownloaded(query) ?: emptyList()
                 emit(ApiResult.Success(localSongs))
             } else {
-                emit(ApiResult.Success(songDataSource.search(query)))
+                emit(ApiResult.Success(songDataSource.search(query, filterParams, settings)))
             }
         }.catch { e ->
             emit(ApiResult.Error(e.toException()))
@@ -54,6 +60,18 @@ class SongRepository(
         return flow {
             emit(ApiResult.Loading)
             emit(ApiResult.Success(songDataSource.getSongInfo(songId)))
+        }.catch { e ->
+            emit(ApiResult.Error(e.toException()))
+        }.flowOn(Dispatchers.IO)
+    }
+
+    fun getRelatedSongs(
+        videoId: String,
+        settings: UmihiSettings? = null
+    ): Flow<ApiResult<List<Song>>> {
+        return flow {
+            emit(ApiResult.Loading)
+            emit(ApiResult.Success(songDataSource.getRelatedSongs(videoId, settings)))
         }.catch { e ->
             emit(ApiResult.Error(e.toException()))
         }.flowOn(Dispatchers.IO)

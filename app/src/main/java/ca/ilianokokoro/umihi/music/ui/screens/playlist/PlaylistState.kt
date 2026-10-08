@@ -4,6 +4,8 @@ import ca.ilianokokoro.umihi.music.models.Playlist
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
 
 
+import ca.ilianokokoro.umihi.music.models.Song
+
 data class PlaylistState(
     val screenState: ScreenState,
     val isRefreshing: Boolean = false,
@@ -12,7 +14,12 @@ data class PlaylistState(
     val searchQuery: String = "",
     val showingSearch: Boolean = false,
     val isLoggedIn: Boolean = false,
-    val optionsExtended: Boolean = false
+    val optionsExtended: Boolean = false,
+    val recommendedSongs: List<Song> = emptyList(),
+    val isLoadingRecommendations: Boolean = false,
+    val isLoadingMoreRecommendations: Boolean = false,
+    val hasMoreRecommendations: Boolean = true,
+    val showInfiniteSuggestions: Boolean = true
 )
 
 sealed class ScreenState {

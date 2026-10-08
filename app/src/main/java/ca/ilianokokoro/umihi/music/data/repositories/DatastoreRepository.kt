@@ -56,6 +56,8 @@ class DatastoreRepository(private val context: Context) {
         val APP_VOLUME = intPreferencesKey(Constants.Datastore.APP_VOLUME_KEY)
         val THEME_MODE = stringPreferencesKey(Constants.Datastore.THEME_MODE_KEY)
         val DOWNLOAD_LOCATION = stringPreferencesKey(Constants.Datastore.DOWNLOAD_LOCATION)
+        val COUNTRY_CODE = stringPreferencesKey(Constants.Datastore.COUNTRY_CODE_KEY)
+        val INFINITE_PLAYLIST_SUGGESTIONS = booleanPreferencesKey(Constants.Datastore.INFINITE_PLAYLIST_SUGGESTIONS_KEY)
     }
 
     suspend fun <T> save(key: Preferences.Key<T>, value: T) {
@@ -86,6 +88,8 @@ class DatastoreRepository(private val context: Context) {
         val appVolume = it[APP_VOLUME] ?: Constants.Player.Volume.DEFAULT_PERCENT
         val themeMode =
             it[THEME_MODE]?.let { modeStr -> ThemeMode.fromString(modeStr) } ?: ThemeMode.SYSTEM
+        val countryCode = it[COUNTRY_CODE] ?: "VN"
+        val infinitePlaylistSuggestions = it[INFINITE_PLAYLIST_SUGGESTIONS] ?: true
         val cookies = cookies.first()
         val dataSyncId = dataSyncId.first()
         val downloadLocation = it[DOWNLOAD_LOCATION]
@@ -108,7 +112,9 @@ class DatastoreRepository(private val context: Context) {
             thumbnailCacheSizeMB = thumbnailCacheSize,
             appVolume = appVolume,
             themeMode = themeMode,
-            downloadLocation = downloadLocation
+            downloadLocation = downloadLocation,
+            countryCode = countryCode,
+            infinitePlaylistSuggestions = infinitePlaylistSuggestions
         )
     }
 

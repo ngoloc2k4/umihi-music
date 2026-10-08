@@ -47,7 +47,14 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
 
-            songRepository.search(_uiState.value.search).collect { apiResult ->
+            val settings = datastoreRepository.getSettings()
+            val currentFilter = _uiState.value.activeFilter
+
+            songRepository.search(
+                query = _uiState.value.search,
+                filterParams = currentFilter.params,
+                settings = settings
+            ).collect { apiResult ->
                 _uiState.update {
                     _uiState.value.copy(
                         screenState = when (apiResult) {
@@ -62,6 +69,17 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
 
+    }
+
+    fun onFilterChange(filter: SearchFilter) {
+        if (_uiState.value.activeFilter != filter) {
+            _uiState.update {
+                it.copy(activeFilter = filter)
+            }
+            if (_uiState.value.search.isNotBlank()) {
+                search()
+            }
+        }
     }
 
 

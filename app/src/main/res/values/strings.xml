@@ -198,4 +198,61 @@
     <string name="lyrics">Lyrics</string>
     <string name="no_lyrics_found">No lyrics found</string>
 
+    <!-- Custom Ported Features -->
+    <string name="search_all">All</string>
+    <string name="search_songs">Songs</string>
+    <string name="search_videos">Videos</string>
+    <string name="your_playlists">Your Playlists</string>
+    <string name="listen_again">Listen again</string>
+    <string name="video">Video</string>
+    <string name="force_stop">Force Stop Playback</string>
+    <string name="force_stop_toast">Playback stopped completely</string>
+    <string name="recently_played">Recently Played</string>
+    <string name="clear_history">Clear History</string>
+    <string name="select_country_region">Content Country / Region</string>
+    <string name="category_for_you">For You</string>
+    <string name="category_charts">Charts &amp; Trending</string>
+    <string name="category_chill">Chill</string>
+    <string name="category_workout">Workout</string>
+    <string name="category_focus">Focus</string>
+    <string name="category_sleep">Sleep &amp; Relax</string>
+    <string name="mix_from_artist">Mix: %1$s &amp; Similar</string>
+    <string name="top_charts">Top Charts</string>
+
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="greeting_night">Late night chill</string>
+    <string name="context_morning_title">☕ Morning Coffee &amp; Good Vibes</string>
+    <string name="context_afternoon_title">💻 Deep Focus &amp; Study Music</string>
+    <string name="context_evening_title">🌇 Evening Wind Down</string>
+    <string name="context_night_title">🌙 Night Sleep &amp; Relaxing Beats</string>
+    <string name="supermix_title">✨ My Supermix</string>
+    <string name="supermix_subtitle">Endless blended mix of your favorites &amp; recommendations</string>
+    <string name="daily_mix_title">💿 Daily Mix %1$d</string>
+    <string name="forgotten_favorites_title">⏳ Forgotten Favorites</string>
+    <string name="forgotten_favorites_subtitle">Songs you used to love</string>
+    <string name="discover_weekly_title">🌱 Discover New Songs</string>
+    <string name="discover_weekly_subtitle">Hand-picked fresh songs for your taste</string>
+    <string name="favorite_artists_title">🎤 Your Favorite Artists</string>
+    <string name="top_charts_title">🔥 Top 100 Charts</string>
+    <string name="trending_tiktok_title">🎵 Trending &amp; Viral Hits</string>
+    <string name="movie_ost_title">🎬 Best Movie &amp; Drama OSTs</string>
+    <string name="cafe_acoustic_title">☕ Cafe Acoustic Chill</string>
+
+    <string name="in_app_volume">In-App Volume</string>
+    <string name="in_app_volume_desc">Independent in-app audio volume control</string>
+    <string name="volume_boost_badge">Boost</string>
+
+    <string name="recommended_for_playlist">Recommended for this playlist</string>
+    <string name="recommended_for_playlist_subtitle">Based on songs in this playlist</string>
+    <string name="refresh_recommendations">Refresh Suggestions</string>
+    <string name="add_to_playlist">Add to playlist</string>
+    <string name="added_to_playlist">Added to playlist</string>
+    <string name="empty_playlist_suggestions">This playlist is empty. Explore suggested tracks below:</string>
+    <string name="infinite_playlist_suggestions_title">Infinite Playlist Suggestions</string>
+    <string name="infinite_playlist_suggestions_desc">Continuously load similar song suggestions as you scroll down a playlist</string>
+    <string name="load_more_suggestions">Load more suggestions</string>
+    <string name="loading_more_suggestions">Finding more songs for you…</string>
+
 </resources>

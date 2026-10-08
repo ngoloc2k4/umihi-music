@@ -14,8 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -23,6 +27,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -89,6 +94,21 @@ fun PlaylistScreen(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    val isNearBottom by remember {
+        androidx.compose.runtime.derivedStateOf {
+            val totalItemsCount = lazyListState.layoutInfo.totalItemsCount
+            val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 3
+        }
+    }
+
+    LaunchedEffect(isNearBottom, uiState.showInfiniteSuggestions, uiState.isLoadingMoreRecommendations, uiState.hasMoreRecommendations) {
+        if (isNearBottom && uiState.showInfiniteSuggestions && !uiState.isLoadingMoreRecommendations && !uiState.isLoadingRecommendations && uiState.hasMoreRecommendations && uiState.recommendedSongs.isNotEmpty() && uiState.searchQuery.isBlank()) {
+            playlistViewModel.loadMoreRecommendations()
+        }
+    }
 
     LaunchedEffect(uiState.showingSearch) {
         if (uiState.showingSearch) {
@@ -209,6 +229,7 @@ fun PlaylistScreen(
                                     .fillMaxSize()
                             ) {
                                 LazyColumn(
+                                    state = lazyListState,
                                     modifier = modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(bottom = Constants.Ui.SCROLLABLE_BOTTOM_PADDING),
                                 ) {
@@ -320,6 +341,156 @@ fun PlaylistScreen(
                                                         stringResource(R.string.empty_playlist),
                                                         textAlign = TextAlign.Center,
                                                     )
+                                                }
+                                            }
+                                        }
+
+                                        // Recommendations section
+                                        if (uiState.searchQuery.isBlank() && (uiState.recommendedSongs.isNotEmpty() || uiState.isLoadingRecommendations)) {
+                                            item {
+                                                Spacer(modifier = Modifier.height(24.dp))
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        Text(
+                                                            text = stringResource(R.string.recommended_for_playlist),
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        Text(
+                                                            text = stringResource(R.string.recommended_for_playlist_subtitle),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                    FilledIconButton(
+                                                        onClick = playlistViewModel::refreshRecommendations,
+                                                        enabled = !uiState.isLoadingRecommendations,
+                                                        shapes = IconButtonDefaults.shapes(),
+                                                        colors = IconButtonDefaults.filledIconButtonColors(
+                                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                            contentColor = MaterialTheme.colorScheme.onSurface
+                                                        ),
+                                                        modifier = Modifier.size(36.dp)
+                                                    ) {
+                                                        if (uiState.isLoadingRecommendations) {
+                                                            CircularProgressIndicator(
+                                                                modifier = Modifier.size(18.dp),
+                                                                strokeWidth = 2.dp,
+                                                                color = MaterialTheme.colorScheme.primary
+                                                            )
+                                                        } else {
+                                                            Icon(
+                                                                imageVector = Icons.Rounded.Refresh,
+                                                                contentDescription = stringResource(R.string.refresh_recommendations),
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if (uiState.isLoadingRecommendations && uiState.recommendedSongs.isEmpty()) {
+                                                item {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 24.dp),
+                                                        horizontalArrangement = Arrangement.Center,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        CircularProgressIndicator(
+                                                            modifier = Modifier.size(22.dp),
+                                                            strokeWidth = 2.dp,
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                        Spacer(modifier = Modifier.size(12.dp))
+                                                        Text(
+                                                            text = stringResource(R.string.loading_more_suggestions),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            items(
+                                                items = uiState.recommendedSongs,
+                                                key = { song -> "rec_${song.youtubeId}_${song.uid}" }
+                                            ) { song ->
+                                                SongListItem(
+                                                    song,
+                                                    onPress = {
+                                                        onOpenPlayer()
+                                                        PlayerManager.playSong(song)
+                                                    },
+                                                    playNext = {
+                                                        PlayerManager.addNext(song, application)
+                                                    },
+                                                    addToQueue = {
+                                                        PlayerManager.addToQueue(song, application)
+                                                    },
+                                                    download = {
+                                                        playlistViewModel.downloadSong(song)
+                                                    },
+                                                    addToPlaylist = if (isLoggedIn) {
+                                                        { addToPlaylistSong = song }
+                                                    } else {
+                                                        null
+                                                    }
+                                                )
+                                            }
+
+                                            // Infinite scroll loading indicator / load more trigger
+                                            if (uiState.showInfiniteSuggestions && uiState.recommendedSongs.isNotEmpty()) {
+                                                item {
+                                                    if (uiState.isLoadingMoreRecommendations) {
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(vertical = 20.dp),
+                                                            horizontalArrangement = Arrangement.Center,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            CircularProgressIndicator(
+                                                                modifier = Modifier.size(22.dp),
+                                                                strokeWidth = 2.dp,
+                                                                color = MaterialTheme.colorScheme.primary
+                                                            )
+                                                            Spacer(modifier = Modifier.size(12.dp))
+                                                            Text(
+                                                                text = stringResource(R.string.loading_more_suggestions),
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    } else if (uiState.hasMoreRecommendations) {
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(vertical = 12.dp),
+                                                            horizontalArrangement = Arrangement.Center,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            TextButton(
+                                                                onClick = playlistViewModel::loadMoreRecommendations,
+                                                                shapes = ButtonDefaults.shapes()
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.Rounded.AutoAwesome,
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(18.dp)
+                                                                )
+                                                                Spacer(modifier = Modifier.size(8.dp))
+                                                                Text(stringResource(R.string.load_more_suggestions))
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }

@@ -104,6 +104,8 @@ object Constants {
         const val APP_VOLUME_KEY = "app-volume"
         const val THEME_MODE_KEY = "theme-mode"
         const val DOWNLOAD_LOCATION = "download-location"
+        const val COUNTRY_CODE_KEY = "country-code"
+        const val INFINITE_PLAYLIST_SUGGESTIONS_KEY = "infinite-playlist-suggestions"
     }
 
     object Database {
@@ -253,6 +255,10 @@ object Constants {
         object Browse {
             const val URL = "${ORIGIN}/youtubei/v1/browse?key=${API_KEY}&prettyPrint=false"
             const val PLAYLIST_BROWSE_ID = "FEmusic_liked_playlists"
+            const val HOME_BROWSE_ID = "FEmusic_home"
+            const val CHARTS_BROWSE_ID = "FEmusic_charts"
+            const val EXPLORE_BROWSE_ID = "FEmusic_explore"
+            const val MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres"
 
             // Disabled as it was causing issues
 //            object Fields {
@@ -351,6 +357,12 @@ object Constants {
         object Search {
             const val URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false"
             const val FILTER = "EgWKAQIIAWoSEAMQBBAQEAUQFRAKEAkQERAO"
+            const val FILTER_SONGS = "EgWKAQIIAWoSEAMQBBAQEAUQFRAKEAkQERAO"
+            const val FILTER_VIDEOS = "EgWKAQIQAWoSEAMQBBAQEAUQFRAKEAkQERAO"
+        }
+
+        object Next {
+            const val URL = "${ORIGIN}/youtubei/v1/next?key=${API_KEY}&prettyPrint=false"
         }
 
         object SearchAutocomplete {

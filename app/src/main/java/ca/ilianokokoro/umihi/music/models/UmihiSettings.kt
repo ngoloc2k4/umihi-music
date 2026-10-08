@@ -21,7 +21,9 @@ data class UmihiSettings(
     val thumbnailCacheSizeMB: Int,
     val appVolume: Int,
     val themeMode: ThemeMode,
-    val downloadLocation: Uri?
+    val downloadLocation: Uri?,
+    val countryCode: String = "VN",
+    val infinitePlaylistSuggestions: Boolean = true
 ) {
     val canTrack: Boolean get() = sendPlaybackData && !cookies.isEmpty()
 }
