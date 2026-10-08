@@ -88,6 +88,8 @@ class DatastoreRepository(private val context: Context) {
         val thumbnailCacheSize =
             it[THUMBNAIL_CACHE_SIZE] ?: Constants.Cache.Thumbnail.DEFAULT_SIZE_MB
         val appVolume = it[APP_VOLUME] ?: Constants.Player.Volume.DEFAULT_PERCENT
+        val themeMode =
+            it[THEME_MODE]?.let { modeStr -> ThemeMode.fromString(modeStr) } ?: ThemeMode.SYSTEM
         val rawCountryCode = it[COUNTRY_CODE] ?: "SYSTEM"
         val countryCode = if (rawCountryCode.equals("SYSTEM", ignoreCase = true) || rawCountryCode.isBlank()) {
             val deviceCountry = java.util.Locale.getDefault().country

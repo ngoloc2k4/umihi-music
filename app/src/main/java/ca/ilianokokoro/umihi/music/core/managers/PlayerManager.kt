@@ -210,8 +210,12 @@ object PlayerManager {
 
                 for (seedId in seedIds.reversed()) {
                     try {
-                        val res = songDataSource.getRelatedSongs(seedId, settings)
-                        fetchedSongs.addAll(res)
+                        val resFlow = songRepository.getRelatedSongs(seedId, settings)
+                        resFlow.collect { result ->
+                            if (result is ApiResult.Success) {
+                                fetchedSongs.addAll(result.data)
+                            }
+                        }
                         if (fetchedSongs.size >= 15) break
                     } catch (_: Exception) {}
                 }
