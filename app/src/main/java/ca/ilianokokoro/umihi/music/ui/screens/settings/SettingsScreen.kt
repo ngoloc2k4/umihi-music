@@ -257,6 +257,8 @@ fun SettingsScreen(
                             )
                             SettingSpacer()
                             val currentCountryOption = AVAILABLE_COUNTRIES.find {
+                                it.code.equals(screenState.settings.selectedCountryCode, ignoreCase = true)
+                            } ?: AVAILABLE_COUNTRIES.find {
                                 it.code.equals(screenState.settings.countryCode, ignoreCase = true)
                             } ?: AVAILABLE_COUNTRIES.first()
                             SettingsItem(
@@ -533,7 +535,7 @@ fun SettingsScreen(
                             )
                         } else if (uiState.showCountrySelectDialog) {
                             CountrySelectDialog(
-                                selectedCountryCode = screenState.settings.countryCode,
+                                selectedCountryCode = screenState.settings.selectedCountryCode,
                                 onSelect = { newCode ->
                                     settingsViewModel.updateCountryCode(newCode)
                                     settingsViewModel.updateShowCountrySelectDialog(false)

@@ -23,6 +23,7 @@ data class UmihiSettings(
     val themeMode: ThemeMode,
     val downloadLocation: Uri?,
     val countryCode: String = "VN",
+    val selectedCountryCode: String = "SYSTEM",
     val infinitePlaylistSuggestions: Boolean = true
 ) {
     val canTrack: Boolean get() = sendPlaybackData && !cookies.isEmpty()

@@ -10,6 +10,8 @@ enum class HomeCategory(val titleRes: Int, val iconEmoji: String) {
     CHILL(R.string.category_chill, "☕"),
     WORKOUT(R.string.category_workout, "⚡"),
     FOCUS(R.string.category_focus, "📚"),
+    PARTY(R.string.category_party, "🎉"),
+    ROMANCE(R.string.category_romance, "💖"),
     SLEEP(R.string.category_sleep, "🌙")
 }
 

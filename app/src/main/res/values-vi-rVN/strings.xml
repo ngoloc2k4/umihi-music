@@ -210,6 +210,8 @@
     <string name="category_chill">Thư giãn</string>
     <string name="category_workout">Tập luyện</string>
     <string name="category_focus">Tập trung</string>
+    <string name="category_party">Sôi động &amp; EDM</string>
+    <string name="category_romance">Lãng mạn &amp; Acoustic</string>
     <string name="category_sleep">Ngủ ngon</string>
     <string name="mix_from_artist">Tuyển tập: %1$s &amp; tương tự</string>
     <string name="top_charts">Bảng xếp hạng hàng đầu</string>

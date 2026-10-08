@@ -358,8 +358,11 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
 
             HomeCategory.CHILL -> {
                 try {
+                    val recentSongs = try { historyRepository.getRecentSongsList(20) } catch (_: Exception) { emptyList() }
+                    val topArtist = recentSongs.map { it.artist }.firstOrNull { it.isNotBlank() }
+                    val query = if (topArtist != null) "$topArtist Chill Acoustic Lofi Relax" else "Chill Acoustic Lofi Relax songs"
                     val res = playlistRepository.retrieveMoodSections(
-                        "Chill Acoustic Lofi Relax songs",
+                        query,
                         application.getString(R.string.category_chill),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -383,6 +386,28 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     val res = playlistRepository.retrieveMoodSections(
                         "Focus study piano classical deep work lofi",
                         application.getString(R.string.category_focus),
+                        settings
+                    ).first { it is ApiResult.Success || it is ApiResult.Error }
+                    if (res is ApiResult.Success) res.data else emptyList()
+                } catch (_: Exception) { emptyList() }
+            }
+
+            HomeCategory.PARTY -> {
+                try {
+                    val res = playlistRepository.retrieveMoodSections(
+                        "Party dance remix club vinahouse edm festival",
+                        application.getString(R.string.category_party),
+                        settings
+                    ).first { it is ApiResult.Success || it is ApiResult.Error }
+                    if (res is ApiResult.Success) res.data else emptyList()
+                } catch (_: Exception) { emptyList() }
+            }
+
+            HomeCategory.ROMANCE -> {
+                try {
+                    val res = playlistRepository.retrieveMoodSections(
+                        "Romance acoustic love ballad sweet songs",
+                        application.getString(R.string.category_romance),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
                     if (res is ApiResult.Success) res.data else emptyList()

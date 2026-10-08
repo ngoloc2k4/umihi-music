@@ -88,9 +88,13 @@ class DatastoreRepository(private val context: Context) {
         val thumbnailCacheSize =
             it[THUMBNAIL_CACHE_SIZE] ?: Constants.Cache.Thumbnail.DEFAULT_SIZE_MB
         val appVolume = it[APP_VOLUME] ?: Constants.Player.Volume.DEFAULT_PERCENT
-        val themeMode =
-            it[THEME_MODE]?.let { modeStr -> ThemeMode.fromString(modeStr) } ?: ThemeMode.SYSTEM
-        val countryCode = it[COUNTRY_CODE] ?: "VN"
+        val rawCountryCode = it[COUNTRY_CODE] ?: "SYSTEM"
+        val countryCode = if (rawCountryCode.equals("SYSTEM", ignoreCase = true) || rawCountryCode.isBlank()) {
+            val deviceCountry = java.util.Locale.getDefault().country
+            if (deviceCountry.isNullOrBlank()) "VN" else deviceCountry.uppercase()
+        } else {
+            rawCountryCode.uppercase()
+        }
         val infinitePlaylistSuggestions = it[INFINITE_PLAYLIST_SUGGESTIONS] ?: true
         val cookies = cookies.first()
         val dataSyncId = dataSyncId.first()
@@ -116,6 +120,7 @@ class DatastoreRepository(private val context: Context) {
             themeMode = themeMode,
             downloadLocation = downloadLocation,
             countryCode = countryCode,
+            selectedCountryCode = rawCountryCode,
             infinitePlaylistSuggestions = infinitePlaylistSuggestions
         )
     }

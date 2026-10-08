@@ -191,26 +191,40 @@ object PlayerManager {
                 }
 
                 isFetchingAutoplay = true
-                val lastItem = withContext(Dispatchers.Main.immediate) {
-                    if (controller.mediaItemCount > 0) {
-                        controller.getMediaItemAt(controller.mediaItemCount - 1)
-                    } else null
+                val seedIds = withContext(Dispatchers.Main.immediate) {
+                    val count = controller.mediaItemCount
+                    if (count > 0) {
+                        val startIndex = (count - 3).coerceAtLeast(0)
+                        (startIndex until count).map { controller.getMediaItemAt(it).mediaId }.filter { it.isNotBlank() }
+                    } else emptyList()
                 }
-                val lastId = lastItem?.mediaId ?: return@launch
-                if (lastId.isBlank()) return@launch
+                if (seedIds.isEmpty()) return@launch
 
-                songRepository.getRelatedSongs(lastId).collect { result ->
-                    if (result is ApiResult.Success) {
-                        withContext(Dispatchers.Main.immediate) {
-                            val activeController = currentController ?: return@withContext
-                            val existingIds = (0 until activeController.mediaItemCount).map {
-                                activeController.getMediaItemAt(it).mediaId
-                            }.toSet()
-                            val newSongs = result.data.filterNot { it.youtubeId in existingIds }.take(10)
-                            if (newSongs.isNotEmpty()) {
-                                activeController.addMediaItems(newSongs.map { it.mediaItem })
-                            }
-                        }
+                val fetchedSongs = mutableListOf<Song>()
+                val existingIds = withContext(Dispatchers.Main.immediate) {
+                    val activeController = currentController ?: return@withContext emptySet<String>()
+                    (0 until activeController.mediaItemCount).map {
+                        activeController.getMediaItemAt(it).mediaId
+                    }.toSet()
+                }
+
+                for (seedId in seedIds.reversed()) {
+                    try {
+                        val res = songDataSource.getRelatedSongs(seedId, settings)
+                        fetchedSongs.addAll(res)
+                        if (fetchedSongs.size >= 15) break
+                    } catch (_: Exception) {}
+                }
+
+                val blendedSongs = fetchedSongs
+                    .filterNot { it.youtubeId in existingIds }
+                    .distinctBy { it.youtubeId }
+                    .take(12)
+
+                if (blendedSongs.isNotEmpty()) {
+                    withContext(Dispatchers.Main.immediate) {
+                        val activeController = currentController ?: return@withContext
+                        activeController.addMediaItems(blendedSongs.map { it.mediaItem })
                     }
                 }
             } catch (e: Exception) {

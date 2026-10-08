@@ -215,6 +215,8 @@
     <string name="category_chill">Chill</string>
     <string name="category_workout">Workout</string>
     <string name="category_focus">Focus</string>
+    <string name="category_party">Party &amp; EDM</string>
+    <string name="category_romance">Romance &amp; Acoustic</string>
     <string name="category_sleep">Sleep &amp; Relax</string>
     <string name="mix_from_artist">Mix: %1$s &amp; Similar</string>
     <string name="top_charts">Top Charts</string>
