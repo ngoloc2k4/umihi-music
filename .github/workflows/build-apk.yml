@@ -1,0 +1,135 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - prod
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (release, debug)'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      packages: write
+
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.configuration-cache=false -Dorg.gradle.parallel=false -Xmx4096m"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Configure Keystore
+        id: keystore-setup
+        run: |
+          mkdir -p app
+          if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
+            echo "Using provided secret signing key..."
+            echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release-key.jks
+            echo "storeFile=release-key.jks" > keystore.properties
+            echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> keystore.properties
+            echo "keyAlias=${{ secrets.ALIAS }}" >> keystore.properties
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+          else
+            echo "Generating self-signed release keystore for CI build..."
+            keytool -genkey -v -keystore app/release-key.jks -alias umihirelease -keyalg RSA -keysize 2048 -validity 10000 -storepass umihipass -keypass umihipass -dname "CN=UmihiMusic, OU=App, O=Umihi, L=Local, S=State, C=VN"
+            echo "storeFile=release-key.jks" > keystore.properties
+            echo "storePassword=umihipass" >> keystore.properties
+            echo "keyAlias=umihirelease" >> keystore.properties
+            echo "keyPassword=umihipass" >> keystore.properties
+          fi
+
+      - name: Configure YouTube API Key
+        run: |
+          if [ -n "${{ secrets.YOUTUBE_API_KEY }}" ]; then
+            echo "youtubeApiKey=${{ secrets.YOUTUBE_API_KEY }}" > local.properties
+            echo "Using YouTube API Key from GitHub Secrets"
+          else
+            echo "youtubeApiKey=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30" > local.properties
+            echo "Using default YouTube API Key fallback"
+          fi
+
+      - name: Build Standalone APK
+        run: |
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'release' }}"
+          
+          if [[ "$BUILD_TYPE" == "debug" ]]; then
+            ./gradlew assembleStandaloneDebug -Pbeta=true -PgitHash=${{ github.sha }} --no-daemon --no-configuration-cache --stacktrace
+          else
+            ./gradlew assembleStandaloneRelease -Pbeta=false -PgitHash=${{ github.sha }} --no-daemon --no-configuration-cache --stacktrace
+          fi
+
+      - name: Prepare Single Universal APK
+        run: |
+          mkdir -p output-apk
+          
+          # Find and copy the generated standalone APK as a single UmihiMusic.apk
+          find app/build/outputs/apk -name "*.apk" -not -name "*unaligned*" | while read -r apk; do
+            echo "Found APK candidate: $apk"
+            cp "$apk" "output-apk/UmihiMusic.apk"
+          done
+          
+          echo "Single APK prepared:"
+          ls -la output-apk/
+
+      - name: Upload Single APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: UmihiMusic
+          path: output-apk/UmihiMusic.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish to GitHub Releases
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: "Umihi Music - Latest Build"
+          artifacts: "output-apk/UmihiMusic.apk"
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          makeLatest: true
+          prerelease: false
+          body: |
+            ### 🎵 Umihi Music - Latest Build
+            - Commit: `${{ github.sha }}`
+            - Tải trực tiếp file **`UmihiMusic.apk`** bên dưới và cài đặt ngay vào điện thoại Android.
+          token: ${{ secrets.GITHUB_TOKEN }}
