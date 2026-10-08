@@ -57,17 +57,23 @@ jobs:
 
       - name: Configure Keystore
         id: keystore-setup
+        env:
+          SIGNING_KEY_RAW: ${{ secrets.SIGNING_KEY || secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.KEY_STORE_PASSWORD || secrets.KEYSTORE_PASSWORD || 'umihipass' }}
+          KEY_ALIAS_VAL: ${{ secrets.ALIAS || secrets.KEY_ALIAS || 'umihirelease' }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD || secrets.KEY_PASSWORD || 'umihipass' }}
         run: |
           mkdir -p app
-          if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
-            echo "Using provided secret signing key..."
-            echo "${{ secrets.SIGNING_KEY }}" | base64 -d > app/release-key.jks
+          if [ -n "$SIGNING_KEY_RAW" ]; then
+            echo "Using provided secret signing key from GitHub Secrets..."
+            echo "$SIGNING_KEY_RAW" | base64 -d > app/release-key.jks
             echo "storeFile=release-key.jks" > keystore.properties
-            echo "storePassword=${{ secrets.KEY_STORE_PASSWORD }}" >> keystore.properties
-            echo "keyAlias=${{ secrets.ALIAS }}" >> keystore.properties
-            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+            echo "storePassword=$STORE_PASS" >> keystore.properties
+            echo "keyAlias=$KEY_ALIAS_VAL" >> keystore.properties
+            echo "keyPassword=$KEY_PASS" >> keystore.properties
           else
-            echo "Generating self-signed release keystore for CI build..."
+            echo "Warning: No signing secret found in GitHub Secrets."
+            echo "Generating self-signed release keystore with stable parameters for CI build..."
             keytool -genkey -v -keystore app/release-key.jks -alias umihirelease -keyalg RSA -keysize 2048 -validity 10000 -storepass umihipass -keypass umihipass -dname "CN=UmihiMusic, OU=App, O=Umihi, L=Local, S=State, C=VN"
             echo "storeFile=release-key.jks" > keystore.properties
             echo "storePassword=umihipass" >> keystore.properties
