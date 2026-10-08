@@ -29,6 +29,8 @@ fun TopPlayer(
     modifier: Modifier,
     onSeekBackward: () -> Unit = {},
     onSeekForward: () -> Unit = {},
+    onSkipPrevious: () -> Unit = {},
+    onSkipNext: () -> Unit = {},
 ) {
     if (!isLyricsShown) {
         Thumbnail(
@@ -36,6 +38,8 @@ fun TopPlayer(
             modifier = modifier,
             onSeekBackward = onSeekBackward,
             onSeekForward = onSeekForward,
+            onSkipPrevious = onSkipPrevious,
+            onSkipNext = onSkipNext,
         )
     } else {
         Card(

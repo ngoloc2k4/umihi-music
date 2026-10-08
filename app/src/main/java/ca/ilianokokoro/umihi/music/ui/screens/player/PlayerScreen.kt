@@ -15,6 +15,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -32,6 +33,8 @@ import androidx.compose.material.icons.rounded.FastRewind
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.FilledIconButton
@@ -141,7 +144,9 @@ fun PlayerScreen(
                         .fillMaxHeight()
                         .weight(1f),
                     onSeekBackward = { playerViewModel.seekBy(-10_000L) },
-                    onSeekForward = { playerViewModel.seekBy(10_000L) }
+                    onSeekForward = { playerViewModel.seekBy(10_000L) },
+                    onSkipPrevious = { PlayerManager.skipToPrevious() },
+                    onSkipNext = { PlayerManager.skipToNext() },
                 )
 
                 Column(
@@ -188,7 +193,9 @@ fun PlayerScreen(
                             .fillMaxHeight()
                             .weight(1f),
                         onSeekBackward = { playerViewModel.seekBy(-10_000L) },
-                        onSeekForward = { playerViewModel.seekBy(10_000L) }
+                        onSeekForward = { playerViewModel.seekBy(10_000L) },
+                        onSkipPrevious = { PlayerManager.skipToPrevious() },
+                        onSkipNext = { PlayerManager.skipToNext() },
                     )
                 }
 
@@ -246,11 +253,11 @@ fun PlayerScreen(
     }
 }
 
-private enum class SeekDirection { BACKWARD, FORWARD }
+private enum class SeekDirection { BACKWARD, FORWARD, SKIP_PREVIOUS, SKIP_NEXT }
 
 private data class SeekFeedback(
     val direction: SeekDirection,
-    val seconds: Int,
+    val seconds: Int = 0,
     val timestamp: Long = System.currentTimeMillis()
 )
 
@@ -260,9 +267,13 @@ fun Thumbnail(
     modifier: Modifier = Modifier,
     onSeekBackward: () -> Unit = {},
     onSeekForward: () -> Unit = {},
+    onSkipPrevious: () -> Unit = {},
+    onSkipNext: () -> Unit = {},
 ) {
     var seekFeedback by remember { mutableStateOf<SeekFeedback?>(null) }
     val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val swipeSkipThresholdPx = with(density) { 56.dp.toPx() }
 
     LaunchedEffect(seekFeedback?.timestamp) {
         if (seekFeedback != null) {
@@ -277,10 +288,44 @@ fun Thumbnail(
     ) {
         val size = minOf(maxWidth, maxHeight)
 
+        var totalDragX by remember { mutableStateOf(0f) }
+        var isHorizontalDragging by remember { mutableStateOf(false) }
+
         Box(
             modifier = Modifier
                 .size(size)
                 .clip(RoundedCornerShape(12.dp))
+                .pointerInput(swipeSkipThresholdPx) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            totalDragX = 0f
+                            isHorizontalDragging = true
+                        },
+                        onDragEnd = {
+                            if (totalDragX > swipeSkipThresholdPx) {
+                                // Swipe right -> Previous song
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                seekFeedback = SeekFeedback(SeekDirection.SKIP_PREVIOUS, timestamp = System.currentTimeMillis())
+                                onSkipPrevious()
+                            } else if (totalDragX < -swipeSkipThresholdPx) {
+                                // Swipe left -> Next song
+                                haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+                                seekFeedback = SeekFeedback(SeekDirection.SKIP_NEXT, timestamp = System.currentTimeMillis())
+                                onSkipNext()
+                            }
+                            totalDragX = 0f
+                            isHorizontalDragging = false
+                        },
+                        onDragCancel = {
+                            totalDragX = 0f
+                            isHorizontalDragging = false
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDragX += dragAmount
+                        }
+                    )
+                }
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onDoubleTap = { offset ->
@@ -406,6 +451,72 @@ fun Thumbnail(
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
+                }
+            }
+
+            // Swipe skip previous overlay (left)
+            AnimatedVisibility(
+                visible = seekFeedback?.direction == SeekDirection.SKIP_PREVIOUS,
+                enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                exit = fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.8f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.5f)
+                    .align(Alignment.CenterStart)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.6f),
+                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Transparent
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SkipPrevious,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
+            }
+
+            // Swipe skip next overlay (right)
+            AnimatedVisibility(
+                visible = seekFeedback?.direction == SeekDirection.SKIP_NEXT,
+                enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                exit = fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.8f),
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.5f)
+                    .align(Alignment.CenterEnd)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Black.copy(alpha = 0.6f)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.SkipNext,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(44.dp)
+                    )
                 }
             }
         }

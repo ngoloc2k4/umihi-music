@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.animateToWithDecay
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -102,6 +105,10 @@ fun MiniPlayer(
             onClose()
         }
     }
+
+    val haptic = LocalHapticFeedback.current
+    val swipeThreshold = with(density) { 40.dp.toPx() }
+    var totalDragX by remember { mutableFloatStateOf(0f) }
 
     Card(
         modifier = modifier
@@ -194,32 +201,58 @@ fun MiniPlayer(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SquareImage(
-                uri = currentSong.thumbnailPath ?: currentSong.thumbnailHref,
-                modifier = Modifier.size(50.dp),
-            )
-
-            Column(
+            Row(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 8.dp),
-                verticalArrangement = Arrangement.Center,
+                    .pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDragX = 0f },
+                            onDragEnd = {
+                                if (totalDragX > swipeThreshold) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onSkipPrevious()
+                                } else if (totalDragX < -swipeThreshold) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onSkipNext()
+                                }
+                                totalDragX = 0f
+                            },
+                            onDragCancel = { totalDragX = 0f },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                totalDragX += dragAmount
+                            }
+                        )
+                    },
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = currentSong.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.basicMarquee()
+                SquareImage(
+                    uri = currentSong.thumbnailPath ?: currentSong.thumbnailHref,
+                    modifier = Modifier.size(50.dp),
                 )
-                Text(
-                    text = currentSong.artists,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier.basicMarquee()
-                )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = currentSong.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.basicMarquee()
+                    )
+                    Text(
+                        text = currentSong.artists,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                        modifier = Modifier.basicMarquee()
+                    )
+                }
             }
 
             ButtonGroup(
