@@ -31,5 +31,5 @@ sealed class ScreenState {
 
     data object Loading : ScreenState()
 
-    data class Error(val error: Throwable) : ScreenState()
+    data class Error(val exception: Exception) : ScreenState()
 }

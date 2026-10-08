@@ -16,10 +16,12 @@ import ca.ilianokokoro.umihi.music.core.helpers.UmihiHelper.isNullOrInvalidId
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.APP_VOLUME
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.AUTO_UPDATE
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.COOKIES
+import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.COUNTRY_CODE
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.DATA_SYNC_ID
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.DOWNLOAD_LOCATION
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.DOWNLOAD_ON_METERED
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.EXOPLAYER_CACHE_SIZE
+import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.INFINITE_PLAYLIST_SUGGESTIONS
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.KEEP_SCREEN_ON
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.OFFLINE_MODE
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository.PreferenceKeys.SEND_PLAYBACK_DATA

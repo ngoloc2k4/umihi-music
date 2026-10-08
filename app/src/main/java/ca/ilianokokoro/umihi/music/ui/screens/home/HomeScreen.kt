@@ -342,7 +342,7 @@ fun HomeScreen(
 
                     ScreenState.Loading -> LoadingAnimation()
                     is ScreenState.Error -> ErrorMessage(
-                        ex = uiState.screenState.error,
+                        ex = uiState.screenState.exception,
                         onRetry = homeViewModel::getPlaylists
                     )
 
