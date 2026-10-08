@@ -54,9 +54,7 @@
     <string name="logged_in_message">YouTube 계정에 로그인되어 있습니다</string>
     <string name="logged_out_message">지금 로그인되어 있지 않아요</string>
     <string name="account">내 계정</string>
-=======
     <string name="clear_data_message">이 기기에서 다운로드한 모든 노래와 캐시 데이터를 삭제합니다</string>
->>>>>>> 4f399b43 (feat(i18n): update Korean (ko-rKR) translations)
     <string name="clear_login_message">저장된 모든 계정 및 로그인 정보를 삭제합니다</string>
     <string name="clear_login_confirm_message">This will sign you out and permanently remove all saved YouTube accounts, cookies, and authentication tokens from this device. You will need to log in again to use your account.</string>
     <string name="login_info_cleared">로그인 정보 삭제 완료</string>
@@ -80,7 +78,6 @@
     <string name="remove_download">다운로드 삭제하기</string>
     <string name="cancel_download">다운로드 취소하기</string>
     <string name="hide_playlist">재생목록 숨기기</string>
-<<<<<<< HEAD
     <string name="unhide_playlist">재생목록 숨기기 취소</string>
     <string name="hide_playlist_confirm_text">이 재생목록을 숨길까요? 홈 화면에 더 이상 표시되지 않습니다.</string>
     <string name="unhide_playlist_confirm_text">이 재생목록 숨기기를 취소할까요? 홈 화면에 다시 표시됩니다.</string>
