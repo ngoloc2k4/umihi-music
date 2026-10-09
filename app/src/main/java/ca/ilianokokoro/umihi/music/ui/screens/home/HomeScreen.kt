@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -148,7 +149,7 @@ fun HomeScreen(
                                                 onClick = { homeViewModel.openHistorySheet() }
                                             ) {
                                                 androidx.compose.material3.Icon(
-                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.History,
+                                                    imageVector = Icons.Outlined.History,
                                                     contentDescription = stringResource(R.string.history_title),
                                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )

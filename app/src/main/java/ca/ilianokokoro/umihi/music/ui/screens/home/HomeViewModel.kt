@@ -210,12 +210,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     ?: results.firstOrNull()
 
                 if (topSong != null) {
-                    ca.ilianokokoro.umihi.music.core.managers.PlayerManager.playSong(topSong)
-                    val related = songDataSource.getRelatedSongs(topSong.youtubeId, settings)
-                    val filteredRelated = related.filter { it.youtubeId != topSong.youtubeId }
-                    if (filteredRelated.isNotEmpty()) {
-                        ca.ilianokokoro.umihi.music.core.managers.PlayerManager.setQueue(listOf(topSong) + filteredRelated)
-                    }
+                    ca.ilianokokoro.umihi.music.core.managers.PlayerManager.playSong(topSong, autoRadio = true)
                 }
             } catch (e: Exception) {
                 printe(message = "Failed to play artist radio for $artistName: ${e.message}", exception = e)
