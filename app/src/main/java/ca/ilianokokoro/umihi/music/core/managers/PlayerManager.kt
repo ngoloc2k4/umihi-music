@@ -153,12 +153,14 @@ object PlayerManager {
         )
     }
 
+    private var appContext: Context? = null
     private var autoplayListener: Player.Listener? = null
     private var isFetchingAutoplay = false
     private var radioFetchJob: Job? = null
     private val songRepository = SongRepository()
 
     private fun setupAutoplayListener(built: MediaController, context: Context) {
+        appContext = context.applicationContext
         autoplayListener?.let { built.removeListener(it) }
         val listener = object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -361,7 +363,8 @@ object PlayerManager {
 
         radioFetchJob = scope.launch {
             try {
-                songRepository.getRelatedSongs(song.youtubeId).collect { result ->
+                val settings = appContext?.let { DatastoreRepository(it).getSettings() }
+                songRepository.getRelatedSongs(song.youtubeId, settings).collect { result ->
                     if (result is ApiResult.Success) {
                         val relatedSongs = result.data.filter { it.youtubeId != song.youtubeId }
                         if (relatedSongs.isNotEmpty()) {

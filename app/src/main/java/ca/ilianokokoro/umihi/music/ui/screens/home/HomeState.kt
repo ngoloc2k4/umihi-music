@@ -20,6 +20,7 @@ data class HomeState(
     val isRefreshing: Boolean = false,
     val downloadedSongsCount: Int = 0,
     val selectedCategory: HomeCategory = HomeCategory.FOR_YOU,
+    val orderedCategories: List<HomeCategory> = HomeCategory.entries,
     val timeGreetingRes: Int = R.string.greeting_morning,
     val timeGreetingEmoji: String = "☀️",
     val quickPlaySongs: List<ca.ilianokokoro.umihi.music.models.Song> = emptyList(),

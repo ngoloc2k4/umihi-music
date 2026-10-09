@@ -165,7 +165,7 @@ fun HomeScreen(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            items(HomeCategory.entries) { category ->
+                                            items(uiState.orderedCategories) { category ->
                                                 val isSelected = category == uiState.selectedCategory
                                                 FilterChip(
                                                     selected = isSelected,

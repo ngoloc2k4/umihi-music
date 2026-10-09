@@ -261,6 +261,39 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
         }
     }
 
+    private fun computeOrderedCategories(recentSongs: List<ca.ilianokokoro.umihi.music.models.Song>): List<HomeCategory> {
+        if (recentSongs.isEmpty()) return HomeCategory.entries
+
+        val categoryScores = mutableMapOf<HomeCategory, Int>()
+        val chillKeywords = setOf("chill", "relax", "acoustic", "lofi", "piano", "coffee", "ballad", "ambient")
+        val workoutKeywords = setOf("workout", "gym", "edm", "remix", "dance", "bass", "trap", "hardstyle", "energy", "run")
+        val focusKeywords = setOf("focus", "study", "instrumental", "classical", "deep work", "reading")
+        val partyKeywords = setOf("party", "club", "dj", "festival", "dancehall", "vinahouse", "electronic")
+        val romanceKeywords = setOf("love", "romance", "sweet", "ballad", "tình", "romantic", "crush")
+        val sleepKeywords = setOf("sleep", "rain", "night", "bedtime", "calm", "meditation")
+
+        for (song in recentSongs) {
+            val text = "${song.title} ${song.artist}".lowercase()
+            if (chillKeywords.any { text.contains(it) }) categoryScores[HomeCategory.CHILL] = (categoryScores[HomeCategory.CHILL] ?: 0) + 1
+            if (workoutKeywords.any { text.contains(it) }) categoryScores[HomeCategory.WORKOUT] = (categoryScores[HomeCategory.WORKOUT] ?: 0) + 1
+            if (focusKeywords.any { text.contains(it) }) categoryScores[HomeCategory.FOCUS] = (categoryScores[HomeCategory.FOCUS] ?: 0) + 1
+            if (partyKeywords.any { text.contains(it) }) categoryScores[HomeCategory.PARTY] = (categoryScores[HomeCategory.PARTY] ?: 0) + 1
+            if (romanceKeywords.any { text.contains(it) }) categoryScores[HomeCategory.ROMANCE] = (categoryScores[HomeCategory.ROMANCE] ?: 0) + 1
+            if (sleepKeywords.any { text.contains(it) }) categoryScores[HomeCategory.SLEEP] = (categoryScores[HomeCategory.SLEEP] ?: 0) + 1
+        }
+
+        val dynamicMoods = listOf(
+            HomeCategory.CHILL,
+            HomeCategory.WORKOUT,
+            HomeCategory.FOCUS,
+            HomeCategory.PARTY,
+            HomeCategory.ROMANCE,
+            HomeCategory.SLEEP
+        ).sortedByDescending { categoryScores[it] ?: 0 }
+
+        return listOf(HomeCategory.FOR_YOU, HomeCategory.CHARTS) + dynamicMoods
+    }
+
     private suspend fun fetchSectionsForCategory(
         category: HomeCategory,
         settings: UmihiSettings
@@ -301,11 +334,15 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                 val contextualSections = contextualDeferred.await()
                 val trendingSections = trendingShelfDeferred.await()
 
-                // Update quickPlaySongs and historySongs in state
+                // Dynamically reorder category chips based on user's actual listening genres
+                val orderedChips = computeOrderedCategories(recentSongs)
+
+                // Update quickPlaySongs, historySongs, and orderedCategories in state
                 _uiState.update { currentState ->
                     currentState.copy(
                         quickPlaySongs = recentSongs.take(6),
-                        historySongs = recentSongs
+                        historySongs = recentSongs,
+                        orderedCategories = orderedChips
                     )
                 }
 
@@ -433,8 +470,11 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
 
             HomeCategory.WORKOUT -> {
                 try {
+                    val recentSongs = try { historyRepository.getRecentSongsList(20) } catch (_: Exception) { emptyList() }
+                    val topArtist = recentSongs.map { it.artist }.firstOrNull { it.isNotBlank() }
+                    val query = if (topArtist != null) "$topArtist Workout Gym EDM Energy $countryTerm" else "Workout gym EDM dance energy music $countryTerm"
                     val res = playlistRepository.retrieveMoodSections(
-                        "Workout gym EDM dance energy music $countryTerm",
+                        query,
                         application.getString(R.string.category_workout),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -445,7 +485,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
             HomeCategory.FOCUS -> {
                 try {
                     val res = playlistRepository.retrieveMoodSections(
-                        "Focus study piano classical deep work lofi",
+                        "Focus study piano classical deep work lofi $countryTerm",
                         application.getString(R.string.category_focus),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -455,8 +495,11 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
 
             HomeCategory.PARTY -> {
                 try {
+                    val recentSongs = try { historyRepository.getRecentSongsList(20) } catch (_: Exception) { emptyList() }
+                    val topArtist = recentSongs.map { it.artist }.firstOrNull { it.isNotBlank() }
+                    val query = if (topArtist != null) "$topArtist Party Dance Club Remix $countryTerm" else "Party dance remix club festival $countryTerm"
                     val res = playlistRepository.retrieveMoodSections(
-                        "Party dance remix club festival $countryTerm",
+                        query,
                         application.getString(R.string.category_party),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -466,8 +509,11 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
 
             HomeCategory.ROMANCE -> {
                 try {
+                    val recentSongs = try { historyRepository.getRecentSongsList(20) } catch (_: Exception) { emptyList() }
+                    val topArtist = recentSongs.map { it.artist }.firstOrNull { it.isNotBlank() }
+                    val query = if (topArtist != null) "$topArtist Love Ballad Romance $countryTerm" else "Romance acoustic love ballad sweet songs $countryTerm"
                     val res = playlistRepository.retrieveMoodSections(
-                        "Romance acoustic love ballad sweet songs $countryTerm",
+                        query,
                         application.getString(R.string.category_romance),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -478,7 +524,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
             HomeCategory.SLEEP -> {
                 try {
                     val res = playlistRepository.retrieveMoodSections(
-                        "Sleep rain relax calm bedtime lofi",
+                        "Sleep rain relax calm bedtime lofi $countryTerm",
                         application.getString(R.string.category_sleep),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
