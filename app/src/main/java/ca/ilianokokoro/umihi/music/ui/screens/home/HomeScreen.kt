@@ -128,13 +128,14 @@ fun HomeScreen(
                                         bottom = Constants.Ui.SCROLLABLE_BOTTOM_PADDING,
                                     )
                                 ) {
-                                    // Time-based Greeting Header
+                                    // Time-based Greeting Header + History Button
                                     item(key = "time_greeting_header") {
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(horizontal = 16.dp, vertical = 2.dp),
-                                            verticalAlignment = Alignment.CenterVertically
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
                                                 text = "${uiState.timeGreetingEmoji}  ${stringResource(uiState.timeGreetingRes)}",
@@ -142,6 +143,16 @@ fun HomeScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
+
+                                            androidx.compose.material3.IconButton(
+                                                onClick = { homeViewModel.openHistorySheet() }
+                                            ) {
+                                                androidx.compose.material3.Icon(
+                                                    imageVector = androidx.compose.material.icons.Icons.Rounded.History,
+                                                    contentDescription = stringResource(R.string.history_title),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
 
@@ -172,6 +183,15 @@ fun HomeScreen(
                                                     )
                                                 )
                                             }
+                                        }
+                                    }
+
+                                    // Quick Resume Hero (2x3 Grid for recent songs)
+                                    if (uiState.selectedCategory == HomeCategory.FOR_YOU && uiState.quickPlaySongs.isNotEmpty()) {
+                                        item(key = "quick_play_grid") {
+                                            ca.ilianokokoro.umihi.music.ui.components.home.QuickPlayGrid(
+                                                songs = uiState.quickPlaySongs
+                                            )
                                         }
                                     }
 
@@ -259,10 +279,7 @@ fun HomeScreen(
                                                                         thumbnailHref = item.thumbnailHref,
                                                                         songCount = item.songCount,
                                                                         onClicked = {
-                                                                            val artistSong = section.songs.firstOrNull { it.artist.contains(item.name, ignoreCase = true) }
-                                                                            if (artistSong != null) {
-                                                                                PlayerManager.playSong(artistSong)
-                                                                            }
+                                                                            homeViewModel.playArtistRadio(item.name)
                                                                         }
                                                                     )
                                                                 }
@@ -355,6 +372,15 @@ fun HomeScreen(
                             createPlaylistOpen = false
                         })
 
+                }
+
+                if (uiState.showHistorySheet) {
+                    ca.ilianokokoro.umihi.music.ui.components.bottomsheet.HistoryBottomSheet(
+                        onDismissRequest = { homeViewModel.closeHistorySheet() },
+                        songs = uiState.historySongs,
+                        onClearAll = { homeViewModel.clearAllHistory() },
+                        onRemoveItem = { youtubeId -> homeViewModel.removeHistoryItem(youtubeId) }
+                    )
                 }
             }
         }

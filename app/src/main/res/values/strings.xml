@@ -256,4 +256,10 @@
     <string name="load_more_suggestions">Load more suggestions</string>
     <string name="loading_more_suggestions">Finding more songs for you…</string>
 
+    <string name="quick_picks_title">⚡ Quick Picks</string>
+    <string name="history_title">Listening History</string>
+    <string name="history_empty">No songs in your listening history yet</string>
+    <string name="history_cleared">Listening history cleared</string>
+    <string name="playing_artist_radio">Playing artist radio: %1$s</string>
+
 </resources>

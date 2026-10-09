@@ -21,7 +21,10 @@ data class HomeState(
     val downloadedSongsCount: Int = 0,
     val selectedCategory: HomeCategory = HomeCategory.FOR_YOU,
     val timeGreetingRes: Int = R.string.greeting_morning,
-    val timeGreetingEmoji: String = "☀️"
+    val timeGreetingEmoji: String = "☀️",
+    val quickPlaySongs: List<ca.ilianokokoro.umihi.music.models.Song> = emptyList(),
+    val showHistorySheet: Boolean = false,
+    val historySongs: List<ca.ilianokokoro.umihi.music.models.Song> = emptyList()
 )
 
 sealed class ScreenState {

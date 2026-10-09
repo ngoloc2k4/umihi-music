@@ -159,12 +159,102 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
         }
     }
 
+    fun openHistorySheet() {
+        viewModelScope.launch {
+            val list = try { historyRepository.getRecentSongsList(50) } catch (_: Exception) { emptyList() }
+            _uiState.update { it.copy(showHistorySheet = true, historySongs = list) }
+        }
+    }
+
+    fun closeHistorySheet() {
+        _uiState.update { it.copy(showHistorySheet = false) }
+    }
+
+    fun clearAllHistory() {
+        viewModelScope.launch {
+            try {
+                historyRepository.clearHistory()
+                _uiState.update { it.copy(historySongs = emptyList(), quickPlaySongs = emptyList()) }
+                getPlaylists()
+            } catch (e: Exception) {
+                printe(message = "Failed to clear history: ${e.message}", exception = e)
+            }
+        }
+    }
+
+    fun removeHistoryItem(youtubeId: String) {
+        viewModelScope.launch {
+            try {
+                historyRepository.removeSongFromHistory(youtubeId)
+                _uiState.update { state ->
+                    state.copy(
+                        historySongs = state.historySongs.filterNot { it.youtubeId == youtubeId },
+                        quickPlaySongs = state.quickPlaySongs.filterNot { it.youtubeId == youtubeId }
+                    )
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to remove history item: ${e.message}", exception = e)
+            }
+        }
+    }
+
+    fun playArtistRadio(artistName: String) {
+        viewModelScope.launch {
+            try {
+                val settings = datastoreRepository.getSettings()
+                val results = songDataSource.search(
+                    query = "$artistName hits top songs",
+                    settings = settings
+                )
+                val topSong = results.firstOrNull { it.artist.contains(artistName, ignoreCase = true) }
+                    ?: results.firstOrNull()
+
+                if (topSong != null) {
+                    ca.ilianokokoro.umihi.music.core.managers.PlayerManager.playSong(topSong)
+                    val related = songDataSource.getRelatedSongs(topSong.youtubeId, settings)
+                    val filteredRelated = related.filter { it.youtubeId != topSong.youtubeId }
+                    if (filteredRelated.isNotEmpty()) {
+                        ca.ilianokokoro.umihi.music.core.managers.PlayerManager.setQueue(listOf(topSong) + filteredRelated)
+                    }
+                }
+            } catch (e: Exception) {
+                printe(message = "Failed to play artist radio for $artistName: ${e.message}", exception = e)
+            }
+        }
+    }
+
+    private fun getCountryMusicTerm(countryCode: String?): String {
+        val code = when (countryCode) {
+            null, "", "SYSTEM" -> java.util.Locale.getDefault().country.ifBlank { "VN" }
+            else -> countryCode
+        }.uppercase()
+
+        return when (code) {
+            "VN" -> "Vietnam Pop V-Pop"
+            "US" -> "US-UK Billboard Pop Hot"
+            "GB", "UK" -> "UK Top Hits Pop"
+            "JP" -> "J-Pop Japan Hits Anime"
+            "KR" -> "K-Pop Korea Hits Idol"
+            "TH" -> "Thai Pop Hits T-Pop"
+            "ID" -> "Indonesia Pop Hits Indo"
+            "PH" -> "OPM Philippines Pop Hits"
+            "FR" -> "France Pop Hits Variete"
+            "DE" -> "German Pop Hits Charts"
+            "ES", "MX", "AR", "CO" -> "Latin Pop Reggaeton Hits"
+            "BR", "PT" -> "Brasil Funk Pop Hits Sertanejo"
+            "IN" -> "Bollywood India Hits Punjabi Pop"
+            "CN", "TW", "HK" -> "C-Pop Mandopop Cantopop Hits"
+            else -> "$code Pop Top Hits"
+        }
+    }
+
     private suspend fun fetchContextualTimeShelf(settings: UmihiSettings): List<HomeSection> {
         val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val countryTerm = getCountryMusicTerm(settings.countryCode)
         val (query, titleRes) = when (hour) {
-            in 5..11 -> "Acoustic Pop Morning Coffee Chill Songs" to R.string.context_morning_title
+            in 5..11 -> "Acoustic Pop Morning Coffee Chill Songs $countryTerm" to R.string.context_morning_title
             in 12..17 -> "Deep Focus Study Piano Work Lofi Beats" to R.string.context_afternoon_title
-            in 18..22 -> "Evening Wind Down Chillout Pop Songs" to R.string.context_evening_title
+            in 18..22 -> "Evening Wind Down Chillout Pop Songs $countryTerm" to R.string.context_evening_title
             else -> "Night Sleep Rain Lofi Bedtime Relax Music" to R.string.context_night_title
         }
         return try {
@@ -182,6 +272,8 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
     ): List<HomeSection> = coroutineScope {
         val (greetingRes, greetingEmoji) = getTimeGreeting()
         _uiState.update { it.copy(timeGreetingRes = greetingRes, timeGreetingEmoji = greetingEmoji) }
+
+        val countryTerm = getCountryMusicTerm(settings.countryCode)
 
         when (category) {
             HomeCategory.FOR_YOU -> {
@@ -201,7 +293,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                 val trendingShelfDeferred = async {
                     try {
                         val res = playlistRepository.retrieveMoodSections(
-                            "Trending Viral TikTok Hits Vietnam Pop",
+                            "Trending Viral TikTok Hits $countryTerm",
                             application.getString(R.string.trending_tiktok_title),
                             settings
                         ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -214,20 +306,17 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                 val contextualSections = contextualDeferred.await()
                 val trendingSections = trendingShelfDeferred.await()
 
+                // Update quickPlaySongs and historySongs in state
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        quickPlaySongs = recentSongs.take(6),
+                        historySongs = recentSongs
+                    )
+                }
+
                 val dynamicSections = mutableListOf<HomeSection>()
 
                 if (recentSongs.isNotEmpty()) {
-                    // 1. Recently Played (up to 15 songs)
-                    dynamicSections.add(
-                        HomeSection(
-                            id = "recently_played",
-                            title = application.getString(R.string.recently_played),
-                            subtitle = null,
-                            items = recentSongs.take(15).map { HomeSectionItem.SongItem(it) }
-                        )
-                    )
-
-                    // 2. Favorite Artists Shelf
                     val artistCounts = recentSongs
                         .map { it.artist.trim() }
                         .filter { it.isNotBlank() }
@@ -237,6 +326,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                         .sortedByDescending { it.second }
                         .take(6)
 
+                    // 1. Favorite Artists Shelf (kept with active radio support)
                     if (artistCounts.isNotEmpty()) {
                         val artistItems = artistCounts.mapNotNull { (artistName, count) ->
                             val representativeSong = recentSongs.firstOrNull { it.artist.contains(artistName, ignoreCase = true) }
@@ -260,7 +350,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                         }
                     }
 
-                    // 3. Daily Mix 1, 2, 3 (Fetched concurrently in parallel)
+                    // 2. Daily Mix 1, 2, 3 (Fetched concurrently in parallel)
                     val top3Artists = artistCounts.take(3).map { it.first }
                     val dailyMixDeferreds = top3Artists.mapIndexed { index, artist ->
                         async {
@@ -286,9 +376,9 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     val dailyMixSections = dailyMixDeferreds.awaitAll().filterNotNull()
                     dynamicSections.addAll(dailyMixSections)
 
-                    // 4. Forgotten Favorites (older songs from history)
-                    if (recentSongs.size > 15) {
-                        val olderSongs = recentSongs.drop(12).take(15).distinctBy { it.youtubeId }
+                    // 3. Forgotten Favorites (older songs from history)
+                    if (recentSongs.size > 6) {
+                        val olderSongs = recentSongs.drop(6).take(15).distinctBy { it.youtubeId }
                         if (olderSongs.isNotEmpty()) {
                             dynamicSections.add(
                                 HomeSection(
@@ -305,7 +395,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     val discoveryDeferred = async {
                         try {
                             val res = playlistRepository.retrieveMoodSections(
-                                "Top Hits Vietnam Pop Billboard Hot",
+                                "Top Hits $countryTerm Billboard Hot",
                                 application.getString(R.string.discover_weekly_title),
                                 settings
                             ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -315,7 +405,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     val cafeAcousticDeferred = async {
                         try {
                             val res = playlistRepository.retrieveMoodSections(
-                                "Acoustic Pop Guitar Chill Cafe Songs",
+                                "Acoustic Pop Guitar Chill Cafe Songs $countryTerm",
                                 application.getString(R.string.cafe_acoustic_title),
                                 settings
                             ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -326,13 +416,13 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                     dynamicSections.addAll(cafeAcousticDeferred.await())
                 }
 
-                // 5. Add Contextual Time Shelf (Coffee morning / Deep focus / Night chill)
+                // 4. Add Contextual Time Shelf (Coffee morning / Deep focus / Night chill)
                 dynamicSections.addAll(contextualSections)
 
-                // 6. Add Trending / Themed Shelf
+                // 5. Add Trending / Themed Shelf
                 dynamicSections.addAll(trendingSections)
 
-                // 7. Add YouTube Music official recommendation sections (deduplicated)
+                // 6. Add YouTube Music official recommendation sections (deduplicated)
                 (dynamicSections + homeSections).distinctBy { it.id.ifBlank { it.title } }
             }
 
@@ -360,7 +450,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                 try {
                     val recentSongs = try { historyRepository.getRecentSongsList(20) } catch (_: Exception) { emptyList() }
                     val topArtist = recentSongs.map { it.artist }.firstOrNull { it.isNotBlank() }
-                    val query = if (topArtist != null) "$topArtist Chill Acoustic Lofi Relax" else "Chill Acoustic Lofi Relax songs"
+                    val query = if (topArtist != null) "$topArtist Chill Acoustic Lofi Relax $countryTerm" else "Chill Acoustic Lofi Relax songs $countryTerm"
                     val res = playlistRepository.retrieveMoodSections(
                         query,
                         application.getString(R.string.category_chill),
@@ -373,7 +463,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
             HomeCategory.WORKOUT -> {
                 try {
                     val res = playlistRepository.retrieveMoodSections(
-                        "Workout gym EDM dance energy music",
+                        "Workout gym EDM dance energy music $countryTerm",
                         application.getString(R.string.category_workout),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -395,7 +485,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
             HomeCategory.PARTY -> {
                 try {
                     val res = playlistRepository.retrieveMoodSections(
-                        "Party dance remix club vinahouse edm festival",
+                        "Party dance remix club festival $countryTerm",
                         application.getString(R.string.category_party),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
@@ -406,7 +496,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
             HomeCategory.ROMANCE -> {
                 try {
                     val res = playlistRepository.retrieveMoodSections(
-                        "Romance acoustic love ballad sweet songs",
+                        "Romance acoustic love ballad sweet songs $countryTerm",
                         application.getString(R.string.category_romance),
                         settings
                     ).first { it is ApiResult.Success || it is ApiResult.Error }
