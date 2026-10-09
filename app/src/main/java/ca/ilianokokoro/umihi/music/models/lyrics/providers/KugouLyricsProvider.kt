@@ -66,7 +66,12 @@ class KugouLyricsProvider(
     }
 
     private fun searchSongHash(query: LyricsQuery): String? {
-        val keyword = "${query.cleanedTitle} ${query.artist}".trim()
+        val hash = doSearchHash("${query.cleanedTitle} ${query.cleanedArtist}".trim())
+        if (hash != null) return hash
+        return doSearchHash(query.cleanedTitle)
+    }
+
+    private fun doSearchHash(keyword: String): String? {
         val url = "http://mobilecdn.kugou.com/api/v3/search/song".toHttpUrl().newBuilder()
             .addQueryParameter("format", "json")
             .addQueryParameter("keyword", keyword)

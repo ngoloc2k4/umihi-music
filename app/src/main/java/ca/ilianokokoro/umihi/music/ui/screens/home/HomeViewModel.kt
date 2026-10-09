@@ -321,31 +321,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
                         .sortedByDescending { it.second }
                         .take(6)
 
-                    // 1. Favorite Artists Shelf (kept with active radio support)
-                    if (artistCounts.isNotEmpty()) {
-                        val artistItems = artistCounts.mapNotNull { (artistName, count) ->
-                            val representativeSong = recentSongs.firstOrNull { it.artist.contains(artistName, ignoreCase = true) }
-                            representativeSong?.let {
-                                HomeSectionItem.ArtistItem(
-                                    name = artistName,
-                                    thumbnailHref = it.thumbnailPath ?: it.thumbnailHref,
-                                    songCount = count
-                                )
-                            }
-                        }
-                        if (artistItems.isNotEmpty()) {
-                            dynamicSections.add(
-                                HomeSection(
-                                    id = "favorite_artists",
-                                    title = application.getString(R.string.favorite_artists_title),
-                                    subtitle = null,
-                                    items = artistItems
-                                )
-                            )
-                        }
-                    }
-
-                    // 2. Daily Mix 1, 2, 3 (Fetched concurrently in parallel)
+                    // 1. Daily Mix 1, 2, 3 (Fetched concurrently in parallel)
                     val top3Artists = artistCounts.take(3).map { it.first }
                     val dailyMixDeferreds = top3Artists.mapIndexed { index, artist ->
                         async {

@@ -34,7 +34,10 @@ class LrcLibProvider(
 
     override suspend fun getLyrics(query: LyricsQuery): Lyrics? =
         withContext(Dispatchers.IO) {
-            fetchExact(query)
+            fetchExact(query) 
+                ?: fetchExact(query.copy(title = query.cleanedTitle, artist = query.cleanedArtist))
+                ?: fetchSearch(query)
+                ?: fetchSearch(query.copy(title = query.cleanedTitle, artist = query.cleanedArtist))
         }
 
     private fun fetchExact(query: LyricsQuery): Lyrics? =

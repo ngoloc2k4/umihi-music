@@ -58,9 +58,14 @@ class NeteaseLyricsProvider(
     }
 
     private fun searchSong(query: LyricsQuery): Long? {
-        val searchKeyword = "${query.cleanedTitle} ${query.artist}".trim()
+        val songId = doSearch("${query.cleanedTitle} ${query.cleanedArtist}".trim())
+        if (songId != null) return songId
+        return doSearch(query.cleanedTitle)
+    }
+
+    private fun doSearch(keyword: String): Long? {
         val url = "https://music.163.com/api/search/get/web".toHttpUrl().newBuilder()
-            .addQueryParameter("s", searchKeyword)
+            .addQueryParameter("s", keyword)
             .addQueryParameter("type", "1")
             .addQueryParameter("offset", "0")
             .addQueryParameter("total", "true")
