@@ -75,10 +75,34 @@ class PlaylistViewModel(
     init {
         observeSongDownloads()
         observeLoginState()
+        observeBlockedContent()
         viewModelScope.launch {
             getPlaylistInfoAsync()
             // downloadPlaylistIfNeeded() Disabled for now (TODO : just make it silent)
             observerDownloadJob()
+        }
+    }
+
+    private fun observeBlockedContent() {
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                blockedContentRepository.blockedArtistsSet,
+                blockedContentRepository.blockedKeywordsSet
+            ) { _, _ -> }.collect {
+                _uiState.update { state ->
+                    val updatedScreenState = when (val s = state.screenState) {
+                        is ScreenState.Success -> {
+                            val cleanSongs = blockedContentRepository.filterSongs(s.playlist.songs)
+                            s.copy(playlist = s.playlist.copy(songs = cleanSongs))
+                        }
+                        else -> s
+                    }
+                    state.copy(
+                        screenState = updatedScreenState,
+                        recommendedSongs = blockedContentRepository.filterSongs(state.recommendedSongs)
+                    )
+                }
+            }
         }
     }
 
@@ -430,9 +454,11 @@ class PlaylistViewModel(
                             }
 
                             is ApiResult.Success -> {
-                                fetchRecommendations(apiResult.data)
+                                val cleanSongs = blockedContentRepository.filterSongs(apiResult.data.songs)
+                                val cleanPlaylist = apiResult.data.copy(songs = cleanSongs)
+                                fetchRecommendations(cleanPlaylist)
                                 ScreenState.Success(
-                                    playlist = apiResult.data
+                                    playlist = cleanPlaylist
                                 )
                             }
                         }
@@ -694,7 +720,15 @@ class PlaylistViewModel(
         viewModelScope.launch {
             blockedContentRepository.blockArtist(artistName)
             _uiState.update { state ->
+                val updatedScreenState = when (val s = state.screenState) {
+                    is ScreenState.Success -> {
+                        val cleanSongs = blockedContentRepository.filterSongs(s.playlist.songs)
+                        s.copy(playlist = s.playlist.copy(songs = cleanSongs))
+                    }
+                    else -> s
+                }
                 state.copy(
+                    screenState = updatedScreenState,
                     recommendedSongs = blockedContentRepository.filterSongs(state.recommendedSongs)
                 )
             }

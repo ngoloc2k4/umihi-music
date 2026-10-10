@@ -73,17 +73,27 @@ class BlockedContentRepository private constructor(context: Context) {
     }
 
     fun isSongBlocked(song: Song): Boolean {
-        return isContentBlocked(artist = song.artist, title = song.title)
+        return isContentBlocked(artist = song.artists.ifBlank { song.artist }, title = song.title)
     }
 
     fun isContentBlocked(artist: String, title: String): Boolean {
         val blockedArtists = _blockedArtistsSet.value
         val blockedKeywords = _blockedKeywordsSet.value
 
-        if (blockedArtists.isNotEmpty()) {
+        if (blockedArtists.isNotEmpty() && artist.isNotBlank()) {
             val lowerArtist = artist.lowercase()
+            // Split multiple artists delimited by comma, &, ft, feat, x
+            val individualArtists = lowerArtist.split(Regex("[,&/]|\\bft\\.?\\b|\\bfeat\\.?\\b|\\bx\\b"))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+
             for (blocked in blockedArtists) {
+                // Check if the full artist string contains blocked artist,
+                // or any individual artist matches or contains the blocked artist
                 if (lowerArtist.contains(blocked)) return true
+                for (a in individualArtists) {
+                    if (a == blocked || a.contains(blocked)) return true
+                }
             }
         }
 

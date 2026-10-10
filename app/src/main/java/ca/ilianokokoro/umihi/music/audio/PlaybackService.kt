@@ -37,6 +37,7 @@ import ca.ilianokokoro.umihi.music.core.helpers.LogHelper.printe
 import ca.ilianokokoro.umihi.music.core.helpers.UmihiHelper
 import ca.ilianokokoro.umihi.music.core.managers.PlayerManager
 import ca.ilianokokoro.umihi.music.core.youtube.YoutubeStatsTracker
+import ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository
 import ca.ilianokokoro.umihi.music.data.repositories.HistoryRepository
 import ca.ilianokokoro.umihi.music.data.repositories.PlaylistRepository
@@ -68,6 +69,7 @@ class PlaybackService : MediaLibraryService() {
 
     private lateinit var callback: UmihiMediaLibraryCallback
     private lateinit var historyRepository: HistoryRepository
+    private lateinit var blockedContentRepository: BlockedContentRepository
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "ACTION_FORCE_STOP") {
@@ -90,6 +92,7 @@ class PlaybackService : MediaLibraryService() {
         playlistRepository = PlaylistRepository(application)
         songRepository = SongRepository(application)
         historyRepository = HistoryRepository(applicationContext)
+        blockedContentRepository = BlockedContentRepository.getInstance(applicationContext)
 
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(Util.getUserAgent(this, packageName))
@@ -186,6 +189,18 @@ class PlaybackService : MediaLibraryService() {
                 updateCurrentMediaItemThumbnail(mediaItem)
                 val songId = mediaItem?.mediaId ?: return
                 val song = mediaItem.toSong()
+
+                // If currently transitioned song is blocked, auto-skip immediately
+                if (::blockedContentRepository.isInitialized && blockedContentRepository.isSongBlocked(song)) {
+                    if (player.hasNextMediaItem()) {
+                        player.seekToNext()
+                        player.prepare()
+                    } else {
+                        player.stop()
+                    }
+                    return
+                }
+
                 serviceScope.launch {
                     historyRepository.addSongToHistory(song)
                     val settings = datastoreRepository.getSettings()

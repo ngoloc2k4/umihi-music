@@ -305,15 +305,26 @@ object PlayerManager {
 
     fun playPlaylist(playlist: Playlist, index: Int = 0) {
         val controller = currentController ?: return
-        val mediaItems = playlist.mediaItems
+        val blockedRepo = appContext?.let { BlockedContentRepository.getInstance(it) }
+        val filteredSongs = if (blockedRepo != null) blockedRepo.filterSongs(playlist.songs) else playlist.songs
 
-        if (mediaItems.isEmpty()) {
+        if (filteredSongs.isEmpty()) {
             return
         }
 
+        val originalTargetSong = playlist.songs.getOrNull(index)
+        val targetIndex = if (originalTargetSong != null) {
+            val foundIndex = filteredSongs.indexOf(originalTargetSong)
+            if (foundIndex >= 0) foundIndex else 0
+        } else {
+            0
+        }
+
+        val mediaItems = filteredSongs.map { it.mediaItem }
+
         controller.setMediaItems(
             mediaItems,
-            index.coerceIn(0, mediaItems.lastIndex),
+            targetIndex.coerceIn(0, mediaItems.lastIndex),
             C.TIME_UNSET
         )
 
@@ -322,8 +333,15 @@ object PlayerManager {
     }
 
     fun shufflePlaylist(playlist: Playlist) {
+        val blockedRepo = appContext?.let { BlockedContentRepository.getInstance(it) }
+        val filteredSongs = if (blockedRepo != null) blockedRepo.filterSongs(playlist.songs) else playlist.songs
+
+        if (filteredSongs.isEmpty()) {
+            return
+        }
+
         val shuffledPlaylist = playlist.copy(
-            songs = playlist.songs.shuffled()
+            songs = filteredSongs.shuffled()
         )
 
         playPlaylist(shuffledPlaylist)
@@ -339,10 +357,27 @@ object PlayerManager {
             return
         }
 
+        val blockedRepo = appContext?.let { BlockedContentRepository.getInstance(it) }
+        val originalTarget = mediaItems.getOrNull(startIndex)
+        val filteredItems = if (blockedRepo != null) {
+            mediaItems.filterNot { blockedRepo.isSongBlocked(it.toSong()) }
+        } else {
+            mediaItems
+        }
+
+        if (filteredItems.isEmpty()) {
+            return
+        }
+
+        val targetIndex = if (originalTarget != null) {
+            val idx = filteredItems.indexOf(originalTarget)
+            if (idx >= 0) idx else 0
+        } else 0
+
         currentController?.run {
             setMediaItems(
-                mediaItems,
-                startIndex.coerceIn(0, mediaItems.lastIndex),
+                filteredItems,
+                targetIndex.coerceIn(0, filteredItems.lastIndex),
                 startPositionMs
             )
             prepare()

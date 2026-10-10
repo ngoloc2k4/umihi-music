@@ -27,6 +27,22 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         observeLoginState()
+        observeBlockedContent()
+    }
+
+    private fun observeBlockedContent() {
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                blockedContentRepository.blockedArtistsSet,
+                blockedContentRepository.blockedKeywordsSet
+            ) { _, _ -> }.collect {
+                val currentScreen = _uiState.value.screenState
+                if (currentScreen is ScreenState.Success) {
+                    val filtered = blockedContentRepository.filterSongs(currentScreen.results)
+                    _uiState.update { it.copy(screenState = ScreenState.Success(results = filtered)) }
+                }
+            }
+        }
     }
 
     private fun observeLoginState() {

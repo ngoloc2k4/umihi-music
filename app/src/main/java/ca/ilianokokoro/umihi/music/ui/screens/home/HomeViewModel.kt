@@ -41,6 +41,33 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
     init {
         getPlaylists()
         observeDownloadedSongsCount()
+        observeBlockedContent()
+    }
+
+    private fun observeBlockedContent() {
+        viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(
+                blockedContentRepository.blockedArtistsSet,
+                blockedContentRepository.blockedKeywordsSet
+            ) { _, _ -> }.collect {
+                val currentState = _uiState.value.screenState
+                if (currentState is ScreenState.LoggedIn) {
+                    val filteredSections = currentState.sections.mapNotNull { section ->
+                        val cleanItems = section.items.filterNot { item ->
+                            when (item) {
+                                is HomeSectionItem.SongItem -> blockedContentRepository.isSongBlocked(item.song)
+                                is HomeSectionItem.ArtistItem -> blockedContentRepository.isContentBlocked(artist = item.name, title = "")
+                                is HomeSectionItem.PlaylistItem -> false
+                            }
+                        }
+                        if (cleanItems.isEmpty()) null else section.copy(items = cleanItems)
+                    }
+                    _uiState.update { state ->
+                        state.copy(screenState = currentState.copy(sections = filteredSections))
+                    }
+                }
+            }
+        }
     }
 
     private fun observeDownloadedSongsCount() {
