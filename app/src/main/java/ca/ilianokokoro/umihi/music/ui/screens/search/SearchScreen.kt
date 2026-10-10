@@ -296,7 +296,7 @@ fun SearchScreenContent(
                                     null
                                 },
                                 blockArtist = {
-                                    viewModel.blockArtist(song.artist)
+                                    searchViewModel.blockArtist(song.artist)
                                     Toast.makeText(
                                         context,
                                         context.getString(R.string.artist_blocked, song.artist),
