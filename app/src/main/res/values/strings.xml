@@ -281,6 +281,5 @@
     <string name="keyword_hint">e.g. remix, nightcore…</string>
     <string name="artist_hint">e.g. Artist name…</string>
     <string name="add">Add</string>
-    <string name="cancel">Cancel</string>
 
 </resources>
