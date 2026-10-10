@@ -262,4 +262,25 @@
     <string name="history_cleared">Listening history cleared</string>
     <string name="playing_artist_radio">Playing artist radio: %1$s</string>
 
+    <string name="block_artist">Block artist</string>
+    <string name="artist_blocked">Blocked artist: %1$s</string>
+    <string name="artist_unblocked">Unblocked artist: %1$s</string>
+    <string name="keyword_blocked">Blocked keyword: %1$s</string>
+    <string name="keyword_unblocked">Unblocked keyword: %1$s</string>
+    <string name="blocked_content_title">Blocked Artists &amp; Content</string>
+    <string name="blocked_content_desc">Hide songs from specific artists or keywords across the app</string>
+    <string name="blocked_artists_tab">Artists</string>
+    <string name="blocked_keywords_tab">Keywords</string>
+    <string name="no_blocked_artists">No blocked artists</string>
+    <string name="no_blocked_keywords">No blocked keywords</string>
+    <string name="unblock">Unblock</string>
+    <string name="add_blocked_keyword">Block keyword</string>
+    <string name="add_blocked_keyword_desc">Enter words or phrases you want to filter out</string>
+    <string name="add_blocked_artist">Block artist</string>
+    <string name="add_blocked_artist_desc">Enter artist name you want to filter out</string>
+    <string name="keyword_hint">e.g. remix, nightcore…</string>
+    <string name="artist_hint">e.g. Artist name…</string>
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
+
 </resources>

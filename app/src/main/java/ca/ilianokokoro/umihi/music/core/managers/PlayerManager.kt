@@ -16,6 +16,7 @@ import ca.ilianokokoro.umihi.music.R
 import ca.ilianokokoro.umihi.music.audio.PlaybackService
 import ca.ilianokokoro.umihi.music.core.ApiResult
 import ca.ilianokokoro.umihi.music.core.Constants
+import ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository
 import ca.ilianokokoro.umihi.music.data.repositories.SongRepository
 import ca.ilianokokoro.umihi.music.extensions.toSong
@@ -222,7 +223,8 @@ object PlayerManager {
                     } catch (_: Exception) {}
                 }
 
-                val blendedSongs = fetchedSongs
+                val blockedRepo = appContext?.let { BlockedContentRepository.getInstance(it) }
+                val blendedSongs = (if (blockedRepo != null) blockedRepo.filterSongs(fetchedSongs) else fetchedSongs)
                     .filterNot { it.youtubeId in existingIds }
                     .distinctBy { it.youtubeId }
                     .take(12)
@@ -364,9 +366,11 @@ object PlayerManager {
         radioFetchJob = scope.launch {
             try {
                 val settings = appContext?.let { DatastoreRepository(it).getSettings() }
+                val blockedRepo = appContext?.let { BlockedContentRepository.getInstance(it) }
                 songRepository.getRelatedSongs(song.youtubeId, settings).collect { result ->
                     if (result is ApiResult.Success) {
-                        val relatedSongs = result.data.filter { it.youtubeId != song.youtubeId }
+                        val unblocked = if (blockedRepo != null) blockedRepo.filterSongs(result.data) else result.data
+                        val relatedSongs = unblocked.filter { it.youtubeId != song.youtubeId }
                         if (relatedSongs.isNotEmpty()) {
                             withContext(Dispatchers.Main) {
                                 val activeController = currentController ?: return@withContext

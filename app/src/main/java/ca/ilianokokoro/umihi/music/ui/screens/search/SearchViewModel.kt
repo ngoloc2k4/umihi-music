@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import ca.ilianokokoro.umihi.music.core.ApiResult
+import ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository
 import ca.ilianokokoro.umihi.music.data.repositories.DatastoreRepository
 import ca.ilianokokoro.umihi.music.data.repositories.SongRepository
 import ca.ilianokokoro.umihi.music.models.Song
@@ -22,6 +23,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
 
     private val datastoreRepository = DatastoreRepository(application)
     val songRepository = SongRepository(application)
+    private val blockedContentRepository = BlockedContentRepository.getInstance(application)
 
     init {
         observeLoginState()
@@ -83,11 +85,25 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
 
                         // Relevance ranking: songs matching title/artist words ranked highest
                         val ranked = rankSearchResults(results, query)
+                        val filtered = blockedContentRepository.filterSongs(ranked)
 
                         _uiState.update {
-                            it.copy(screenState = ScreenState.Success(results = ranked))
+                            it.copy(screenState = ScreenState.Success(results = filtered))
                         }
                     }
+                }
+            }
+        }
+    }
+
+    fun blockArtist(artistName: String) {
+        viewModelScope.launch {
+            blockedContentRepository.blockArtist(artistName)
+            // Immediately remove blocked artist's songs from current results
+            val currentScreen = _uiState.value.screenState
+            if (currentScreen is ScreenState.Success) {
+                _uiState.update {
+                    it.copy(screenState = ScreenState.Success(results = blockedContentRepository.filterSongs(currentScreen.results)))
                 }
             }
         }

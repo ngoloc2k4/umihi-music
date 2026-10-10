@@ -62,6 +62,8 @@ import ca.ilianokokoro.umihi.music.models.enums.ThemeMode
 import ca.ilianokokoro.umihi.music.ui.components.ErrorMessage
 import ca.ilianokokoro.umihi.music.ui.components.FadingStatusBarWrapper
 import ca.ilianokokoro.umihi.music.ui.components.LoadingAnimation
+import androidx.compose.material.icons.rounded.Block
+import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.BlockedContentBottomSheet
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.CacheSizeInputBottomSheet
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.DiagnosticsLogBottomSheet
 import ca.ilianokokoro.umihi.music.ui.components.bottomsheet.HiddenPlaylistsBottomSheet
@@ -232,6 +234,15 @@ fun SettingsScreen(
                                 leadingIcon = Icons.Outlined.Visibility,
                                 onClick = {
                                     settingsViewModel.updateShowHiddenPlaylistsSheet(true)
+                                }
+                            )
+                            SettingSpacer()
+                            SettingsItem(
+                                title = stringResource(R.string.blocked_content_title),
+                                subtitle = stringResource(R.string.blocked_content_desc),
+                                leadingIcon = Icons.Rounded.Block,
+                                onClick = {
+                                    settingsViewModel.updateShowBlockedContentSheet(true)
                                 }
                             )
                             SettingSpacer()
@@ -549,6 +560,16 @@ fun SettingsScreen(
                                 playlists = uiState.hiddenPlaylists,
                                 onUnhidePlaylist = { settingsViewModel.unhidePlaylist(it) },
                                 onDismiss = { settingsViewModel.updateShowHiddenPlaylistsSheet(false) }
+                            )
+                        } else if (uiState.showBlockedContentSheet) {
+                            BlockedContentBottomSheet(
+                                blockedArtists = uiState.blockedArtists,
+                                blockedKeywords = uiState.blockedKeywords,
+                                onBlockArtist = settingsViewModel::blockArtist,
+                                onUnblockArtist = settingsViewModel::unblockArtist,
+                                onBlockKeyword = settingsViewModel::blockKeyword,
+                                onUnblockKeyword = settingsViewModel::unblockKeyword,
+                                onDismiss = { settingsViewModel.updateShowBlockedContentSheet(false) }
                             )
                         } else if (uiState.showDiagnosticsLogsSheet) {
                             DiagnosticsLogBottomSheet(

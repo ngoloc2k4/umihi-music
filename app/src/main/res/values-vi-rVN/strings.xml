@@ -257,4 +257,25 @@
     <string name="history_cleared">Đã xóa toàn bộ lịch sử nghe nhạc</string>
     <string name="playing_artist_radio">Đang phát radio nghệ sĩ: %1$s</string>
 
+    <string name="block_artist">Chặn nghệ sĩ</string>
+    <string name="artist_blocked">Đã chặn nghệ sĩ: %1$s</string>
+    <string name="artist_unblocked">Đã bỏ chặn nghệ sĩ: %1$s</string>
+    <string name="keyword_blocked">Đã chặn từ khóa: %1$s</string>
+    <string name="keyword_unblocked">Đã bỏ chặn từ khóa: %1$s</string>
+    <string name="blocked_content_title">Nghệ sĩ &amp; nội dung bị chặn</string>
+    <string name="blocked_content_desc">Ẩn bài hát từ nghệ sĩ hoặc chứa từ khóa bị chặn trên toàn ứng dụng</string>
+    <string name="blocked_artists_tab">Nghệ sĩ</string>
+    <string name="blocked_keywords_tab">Từ khóa</string>
+    <string name="no_blocked_artists">Chưa có nghệ sĩ nào bị chặn</string>
+    <string name="no_blocked_keywords">Chưa có từ khóa nào bị chặn</string>
+    <string name="unblock">Bỏ chặn</string>
+    <string name="add_blocked_keyword">Chặn từ khóa</string>
+    <string name="add_blocked_keyword_desc">Nhập từ hoặc cụm từ bạn muốn lọc bỏ khỏi ứng dụng</string>
+    <string name="add_blocked_artist">Chặn nghệ sĩ</string>
+    <string name="add_blocked_artist_desc">Nhập tên nghệ sĩ bạn muốn lọc bỏ</string>
+    <string name="keyword_hint">ví dụ: remix, nightcore…</string>
+    <string name="artist_hint">ví dụ: Tên nghệ sĩ…</string>
+    <string name="add">Thêm</string>
+    <string name="cancel">Hủy</string>
+
 </resources>

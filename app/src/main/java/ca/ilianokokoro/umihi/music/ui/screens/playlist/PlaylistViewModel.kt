@@ -70,6 +70,7 @@ class PlaylistViewModel(
     private val localPlaylistRepository = AppDatabase.getInstance(application).playlistRepository()
     private val datastoreRepository = DatastoreRepository(application)
     private val downloadRepository = DownloadRepository(application)
+    private val blockedContentRepository = ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository.getInstance(application)
 
     init {
         observeSongDownloads()
@@ -501,7 +502,8 @@ class PlaylistViewModel(
                     }
                 }
 
-                val filtered = suggestedSongs
+                val unblockedSuggestions = blockedContentRepository.filterSongs(suggestedSongs)
+                val filtered = unblockedSuggestions
                     .filterNot { it.youtubeId in existingIds }
                     .distinctBy { it.youtubeId }
                     .take(20)
@@ -581,7 +583,8 @@ class PlaylistViewModel(
                     }.awaitAll().flatten()
                 }
 
-                var newUniqueSongs = newRawSongs
+                val unblockedRawSongs = blockedContentRepository.filterSongs(newRawSongs)
+                var newUniqueSongs = unblockedRawSongs
                     .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
                     .distinctBy { it.youtubeId }
                     .take(15)
@@ -592,7 +595,8 @@ class PlaylistViewModel(
                         songDataSource.search(query, settings = settings)
                     } catch (_: Exception) { emptyList<Song>() }
 
-                    newUniqueSongs = fallbackResults
+                    val unblockedFallback = blockedContentRepository.filterSongs(fallbackResults)
+                    newUniqueSongs = unblockedFallback
                         .filterNot { it.youtubeId in playlistIds || it.youtubeId in currentRecIds }
                         .distinctBy { it.youtubeId }
                         .take(15)
@@ -683,6 +687,17 @@ class PlaylistViewModel(
             is ScreenState.Success -> screenState.playlist.info
             is ScreenState.Loading -> screenState.playlistInfo
             is ScreenState.Error -> null
+        }
+    }
+
+    fun blockArtist(artistName: String) {
+        viewModelScope.launch {
+            blockedContentRepository.blockArtist(artistName)
+            _uiState.update { state ->
+                state.copy(
+                    recommendedSongs = blockedContentRepository.filterSongs(state.recommendedSongs)
+                )
+            }
         }
     }
 

@@ -12,7 +12,10 @@ import ca.ilianokokoro.umihi.music.data.datasources.local.LocalPlaylistDataSourc
 import ca.ilianokokoro.umihi.music.data.datasources.local.LocalSongDataSource
 import ca.ilianokokoro.umihi.music.data.datasources.local.VersionDataSource
 import ca.ilianokokoro.umihi.music.models.PlaylistInfo
+import ca.ilianokokoro.umihi.music.data.datasources.local.BlockedContentDao
 import ca.ilianokokoro.umihi.music.data.datasources.local.HistoryDao
+import ca.ilianokokoro.umihi.music.models.BlockedArtist
+import ca.ilianokokoro.umihi.music.models.BlockedKeyword
 import ca.ilianokokoro.umihi.music.models.HistoryEntry
 import ca.ilianokokoro.umihi.music.models.PlaylistSongCrossRef
 import ca.ilianokokoro.umihi.music.models.Song
@@ -20,7 +23,15 @@ import ca.ilianokokoro.umihi.music.models.Version
 import java.util.concurrent.Executors
 
 @Database(
-    entities = [Song::class, PlaylistInfo::class, PlaylistSongCrossRef::class, Version::class, HistoryEntry::class],
+    entities = [
+        Song::class,
+        PlaylistInfo::class,
+        PlaylistSongCrossRef::class,
+        Version::class,
+        HistoryEntry::class,
+        BlockedArtist::class,
+        BlockedKeyword::class
+    ],
     version = Constants.Database.VERSION,
     exportSchema = false
 )
@@ -29,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun playlistRepository(): LocalPlaylistDataSource
     abstract fun versionRepository(): VersionDataSource
     abstract fun historyDao(): HistoryDao
+    abstract fun blockedContentDao(): BlockedContentDao
 
     companion object {
         @Volatile

@@ -36,6 +36,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
     private val datastoreRepository = DatastoreRepository(application)
     private val historyRepository = HistoryRepository(application)
     private val songDataSource = ca.ilianokokoro.umihi.music.data.datasources.SongDataSource()
+    private val blockedContentRepository = ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository.getInstance(application)
 
     init {
         getPlaylists()
@@ -539,6 +540,17 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
         playlists: List<PlaylistInfo>,
         settings: UmihiSettings
     ) {
+        val filteredSections = sections.mapNotNull { section ->
+            val cleanItems = section.items.filterNot { item ->
+                when (item) {
+                    is HomeSectionItem.SongItem -> blockedContentRepository.isSongBlocked(item.song)
+                    is HomeSectionItem.ArtistItem -> blockedContentRepository.isContentBlocked(artist = item.name, title = "")
+                    is HomeSectionItem.PlaylistItem -> false
+                }
+            }
+            if (cleanItems.isEmpty()) null else section.copy(items = cleanItems)
+        }
+
         val mutablePlaylists = playlists.toMutableList()
         val downloadedPlaylist = PlaylistInfo(
             id = Constants.Downloads.DOWNLOADED_PLAYLIST_ID,
@@ -550,7 +562,7 @@ class HomeViewModel(private val application: Application) : AndroidViewModel(app
         _uiState.update { currentState ->
             currentState.copy(
                 screenState = ScreenState.LoggedIn(
-                    sections = sections,
+                    sections = filteredSections,
                     playlistInfos = mutablePlaylists,
                     isLoggedIn = settings.cookies.isNotEmpty()
                 )

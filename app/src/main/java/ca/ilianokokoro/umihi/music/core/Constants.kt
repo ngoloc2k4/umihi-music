@@ -16,16 +16,16 @@ object Constants {
         object Github {
             object Beta {
                 const val API =
-                    "https://api.github.com/repos/ilianoKokoro/umihi-music/releases/tags/beta"
+                    "https://api.github.com/repos/ngoloc2k4/umihi-music/releases/tags/beta"
                 const val DOWNLOAD =
-                    "https://github.com/ilianoKokoro/umihi-music/releases/download/beta/UmihiMusic.apk"
+                    "https://github.com/ngoloc2k4/umihi-music/releases/download/beta/UmihiMusic.apk"
             }
 
             object Release {
                 const val API =
-                    "https://api.github.com/repos/ilianoKokoro/umihi-music/releases/latest"
+                    "https://api.github.com/repos/ngoloc2k4/umihi-music/releases/latest"
                 const val DOWNLOAD =
-                    "https://github.com/ilianoKokoro/umihi-music/releases/latest/download/UmihiMusic.apk"
+                    "https://github.com/ngoloc2k4/umihi-music/releases/latest/download/UmihiMusic.apk"
 
             }
         }
@@ -110,7 +110,7 @@ object Constants {
 
     object Database {
         const val NAME = "umihi-music"
-        const val VERSION = 14
+        const val VERSION = 15
         const val SONGS_TABLE = "songs"
         const val PLAYLISTS_TABLE = "playlists"
         const val VERSIONS_TABLE = "versions"

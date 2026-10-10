@@ -23,6 +23,7 @@ import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -134,6 +135,17 @@ fun HistoryBottomSheet(
                             },
                             removeFromPlaylist = {
                                 onRemoveItem(song.youtubeId)
+                            },
+                            blockArtist = {
+                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                    ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository.getInstance(context).blockArtist(song.artist)
+                                }
+                                onRemoveItem(song.youtubeId)
+                                android.widget.Toast.makeText(
+                                    context,
+                                    context.getString(R.string.artist_blocked, song.artist),
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
                             }
                         )
                     }

@@ -1,6 +1,7 @@
 package ca.ilianokokoro.umihi.music.ui.screens.search
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -293,6 +294,14 @@ fun SearchScreenContent(
                                     { onAddToPlaylist(song) }
                                 } else {
                                     null
+                                },
+                                blockArtist = {
+                                    viewModel.blockArtist(song.artist)
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.artist_blocked, song.artist),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             )
                         }

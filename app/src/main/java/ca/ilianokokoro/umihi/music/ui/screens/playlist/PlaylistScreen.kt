@@ -1,6 +1,7 @@
 package ca.ilianokokoro.umihi.music.ui.screens.playlist
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -333,7 +334,16 @@ fun PlaylistScreen(
                                                         { songToRemove = song }
                                                     } else {
                                                         null
-                                                    })
+                                                    },
+                                                    blockArtist = {
+                                                        playlistViewModel.blockArtist(song.artist)
+                                                        Toast.makeText(
+                                                            context,
+                                                            context.getString(R.string.artist_blocked, song.artist),
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                )
                                             }
                                         } else {
                                             item {
@@ -446,6 +456,14 @@ fun PlaylistScreen(
                                                         { addToPlaylistSong = song }
                                                     } else {
                                                         null
+                                                    },
+                                                    blockArtist = {
+                                                        playlistViewModel.blockArtist(song.artist)
+                                                        Toast.makeText(
+                                                            context,
+                                                            context.getString(R.string.artist_blocked, song.artist),
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
                                                     }
                                                 )
                                             }

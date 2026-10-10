@@ -51,6 +51,21 @@ class SettingsViewModel(
     private val downloadRepository = DownloadRepository(application)
     private val localPlaylistRepository =
         AppDatabase.getInstance(application).playlistRepository()
+    private val blockedContentRepository =
+        ca.ilianokokoro.umihi.music.data.repositories.BlockedContentRepository.getInstance(application)
+
+    init {
+        viewModelScope.launch {
+            blockedContentRepository.getAllBlockedArtistsFlow().collect { artists ->
+                _uiState.update { it.copy(blockedArtists = artists) }
+            }
+        }
+        viewModelScope.launch {
+            blockedContentRepository.getAllBlockedKeywordsFlow().collect { keywords ->
+                _uiState.update { it.copy(blockedKeywords = keywords) }
+            }
+        }
+    }
 
     fun logOut() {
         viewModelScope.launch {
@@ -367,6 +382,34 @@ class SettingsViewModel(
             )
             sharedViewModel.requestPlaylistRefresh()
             getHiddenPlaylists()
+        }
+    }
+
+    fun updateShowBlockedContentSheet(show: Boolean) {
+        _uiState.update { it.copy(showBlockedContentSheet = show) }
+    }
+
+    fun blockArtist(name: String) {
+        viewModelScope.launch {
+            blockedContentRepository.blockArtist(name)
+        }
+    }
+
+    fun unblockArtist(name: String) {
+        viewModelScope.launch {
+            blockedContentRepository.unblockArtist(name)
+        }
+    }
+
+    fun blockKeyword(keyword: String) {
+        viewModelScope.launch {
+            blockedContentRepository.blockKeyword(keyword)
+        }
+    }
+
+    fun unblockKeyword(keyword: String) {
+        viewModelScope.launch {
+            blockedContentRepository.unblockKeyword(keyword)
         }
     }
 
